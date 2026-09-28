@@ -1,19 +1,31 @@
 # API REST (M3)
 
-Servicio FastAPI que expone el motor de detección.
+FastAPI + Uvicorn con persistencia SQLite del historial de predicciones.
 
 ## Endpoints
 
-- `GET /health` : disponibilidad del servicio.
-- `POST /predict` : recibe un vector de características y devuelve la clasificación.
-- `GET /history` : historial de predicciones del tablero.
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/health` | Estado de la API, modelos cargados, umbral y últimas métricas |
+| POST | `/predict` | Predicción de una fila (`{"features": {41 campos}}`) |
+| POST | `/predict/batch` | Predicción por lotes (`{"items": [...]}`) |
+| GET | `/history?limit=N` | Últimas predicciones persistidas (máx. 500) |
 
-## Criterios
+El modelo productivo es el ensamble del motor (RF+KNN+SVM) con umbral calibrado.
+La base SQLite vive en `api/data/redcentinela.db` (no versionada; `REDCENTINELA_DB` la cambia).
 
-- Latencia p95 menor o igual a 200 ms en `/predict` y `/health`, medida con el modelo cargado (PERF-002).
-- Validación estricta de la petición (OWASP API Top 10, requisito SEG-007): sin SQL por concatenación, credenciales solo por variables de entorno.
-- Arranque: `uvicorn api.main:app --reload`.
+## Ejecutar
 
-## Estado
+```powershell
+uvicorn api.main:app --reload
+```
 
-Pendiente, corresponde al entregable E3 del cronograma.
+Documentación interactiva: http://127.0.0.1:8000/docs
+
+## Pruebas
+
+```powershell
+pytest tests/test_api.py -q
+```
+
+Los endpoints requieren modelos entrenados; si faltan, `/predict` responde 503 con la instrucción `python -m motor.train`.

@@ -21,9 +21,13 @@ htmlcov/
 datasets/*.csv
 datasets/*.parquet
 !datasets/sample_*.csv
+datasets/raw/
+datasets/processed/
 motor/models/*.joblib
 motor/models/*.pkl
 motor/resultados/
+api/data/
+*.db
 *.log
 
 # IDE y SO

@@ -8,24 +8,46 @@ Plataforma modular de monitoreo y alerta de tráfico de red basada en aprendizaj
 
 | Módulo | Carpeta | Descripción | Estado |
 |---|---|---|---|
-| M1 Motor ML | `motor/` | Pipeline de datos, entrenamiento (Random Forest, SVM, KNN), Isolation Forest no supervisado, evaluación y artefactos joblib | En construcción |
-| M2 Ingesta de contexto | `datasets/` | Carga de datos de tráfico (NSL-KDD y CSV de prueba desde el tablero) | En construcción |
-| M3 API REST | `api/` | FastAPI: `/health`, `/predict`, `/history` | Pendiente |
+| M1 Motor ML | `motor/` | Carga NSL-KDD, preprocesado (one-hot + estandarización), ensamble RF+KNN+SVM con umbral calibrado, Isolation Forest no supervisado y evaluación (macro-F1, AUC) | En operación (v0.3.0) |
+| M2 Ingesta de contexto | `datasets/` | NSL-KDD crudo (no versionado; `scripts/download_nslkdd.py` lo repone) y CSV de prueba desde el tablero | En operación |
+| M3 API REST | `api/` | FastAPI: `/health`, `/predict`, `/predict/batch`, `/history` con SQLite | En operación (v0.3.0) |
 | M4 Tablero | `tablero/` | Streamlit: monitoreo en vivo e historial | Pendiente |
 | M5 Alertas | `alertas/` | Bot de Telegram vía Bot API (HTTP REST) | Pendiente |
 | M6 CLI | `cli/` | Operación local del motor y la API | Pendiente |
+
+## Resultados del modelo (E2)
+
+Sobre KDDTest+ (conjunto no visto): ensamble macro-F1 **0.788**, AUC **0.965**.
+Sobre holdout del entrenamiento (criterio del proyecto, macro-F1 ≥ 0.90): **0.998**.
+Detalle completo en `motor/models/metrics.json` después de entrenar.
 
 ## Arranque (Windows)
 
 ```powershell
 git clone https://github.com/anorak1212/red-centinela.git
-python -m venv .venv && .venv\Scripts\activate
-pip install -r requirements.txt && pytest
+cd red-centinela
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+# 1) Dataset
+python scripts/download_nslkdd.py
+
+# 2) Motor ML (entrena y guarda modelos + métricas)
+python -m motor.train
+python -m motor.evaluate
+
+# 3) API
+uvicorn api.main:app --reload
+# probar: http://127.0.0.1:8000/docs
+
+# 4) Verificación
+pytest
 ```
 
 ## Convenciones
 
-- Python 3.11, PEP 8, formateador `black`, linter `ruff` (severidad E y F bloquean).
+- Python 3.12, PEP 8, formateador `black`, linter `ruff` (severidad E y F bloquean).
 - Rama `main` siempre desplegable; características en `feature/<nombre>` y llegan por pull request.
 - Commits con prefijo de tipo: `feat:`, `fix:`, `docs:`, `test:`, `chore:`.
 - Versionado semántico `MAYOR.MENOR.PARCHE` para el paquete del motor; modelos serializados se publican como release.

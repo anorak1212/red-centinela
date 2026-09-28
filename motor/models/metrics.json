@@ -1,0 +1,21 @@
+{
+  "ensamble": {
+    "umbral_decision": 0.35,
+    "accuracy_test": 0.7881,
+    "macro_f1_binario_test": 0.7877,
+    "auc_roc_test": 0.9652,
+    "recall_por_familia": {
+      "dos": 0.8408,
+      "probe": 0.8116,
+      "r2l": 0.0375,
+      "u2r": 0.2388
+    }
+  },
+  "macro_f1_holdout_train": 0.9984,
+  "iforest": {
+    "auc_roc": 0.9376,
+    "recall_ataques_top10": 0.9965,
+    "nota": "no supervisado; sin macro-F1 de clasificación"
+  },
+  "nota": "KDDTest+ contiene ataques no vistos en entrenamiento y es notoriamente mas dificil; el umbral PERF-003 (>=0.90) se cumple en el dominio de entrenamiento (holdout) y no en KDDTest+, donde los valores cercanos a 0.80 son el estado del arte reportado en la literatura."
+}

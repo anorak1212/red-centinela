@@ -5,7 +5,7 @@ def test_imports_de_la_pila():
     import joblib  # noqa: F401
     import numpy  # noqa: F401
     import pandas  # noqa: F401
-    import sklearn  # noqa: F401
+    import sklearn
 
     assert hasattr(sklearn, "__version__")
 
