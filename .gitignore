@@ -1,0 +1,33 @@
+# Entornos
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# Entorno y secretos
+.env
+.env.*
+
+# Datos y artefactos grandes (no se versionan)
+datasets/*.csv
+datasets/*.parquet
+!datasets/sample_*.csv
+motor/models/*.joblib
+motor/models/*.pkl
+motor/resultados/
+*.log
+
+# IDE y SO
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

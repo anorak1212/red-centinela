@@ -1,0 +1,14 @@
+# Dependencias de tiempo de ejecución (versiones fijadas, Python 3.11)
+fastapi==0.141.1
+uvicorn==0.54.0
+numpy==2.5.3
+pandas==3.0.6
+scikit-learn==1.9.1
+joblib==1.6.0
+streamlit==1.64.0
+requests==2.34.2
+
+# Dependencias de desarrollo y verificación
+pytest==9.1.1
+ruff==0.16.9
+coverage==7.16.2

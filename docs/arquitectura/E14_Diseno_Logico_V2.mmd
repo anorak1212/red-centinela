@@ -1,0 +1,40 @@
+flowchart TB
+  %% Red Centinela - Diseño lógico V2
+  A[Analista / navegador]
+  subgraph Z1 [Z1 · Internet / Borde]
+    comp_ingress["comp_ingress: Render Ingress Gateway"]
+  end
+  subgraph Z2 [Z2 · Nube pública PaaS (Aplicación)]
+    P1["P1: Tablero Web de Monitoreo"]
+    P2["P2: API REST de Detección"]
+    comp_cache["comp_cache: Caché Local de Modelos"]
+    P3["P3: Servicio de Alertas"]
+  end
+  subgraph Z3 [Z3 · Datos gestionados]
+    comp_db["comp_db: PostgreSQL Server"]
+    comp_model_store["comp_model_store: Almacén Central de Modelos"]
+  end
+  subgraph Z4 [Z4 · Terceros / SaaS y CI/CD]
+    comp_github["comp_github: Repositorio de Código GitHub"]
+    comp_actions["comp_actions: GitHub Actions Runner"]
+    comp_telegram["comp_telegram: Telegram Bot API"]
+  end
+  subgraph Z5 [Z5 · Entorno de desarrollo]
+    comp_train["comp_train: Entorno de Entrenamiento"]
+    comp_dataset["comp_dataset: Dataset NSL-KDD"]
+  end
+  A -->|HTTPS 443| comp_ingress
+  A -->|HTTPS 443 · Streamlit Cloud + subida CSV (M2)| P1
+  P1 -->|/predict, /history · HTTPS/JSON| P2
+  P2 -->|SQL over TLS 5432| comp_db
+  comp_model_store -->|descarga .joblib en init| comp_cache
+  P2 -->|evento malicioso| P3
+  P3 -->|HTTPS REST Bot API · asíncrono| comp_telegram
+  comp_telegram -->|push| A
+  comp_train -->|SSH/Git · git push| comp_github
+  comp_github -->|webhook interno| comp_actions
+  comp_actions -->|HTTPS API · webhook con secreto, con reinicio| comp_ingress
+  %% NOTAS
+  %% P3 reintroducido (E12/E13): envío de alertas asíncrono para no afectar p95 /predict
+  %% El tablero NO accede directo a la BD: consultas por /history (mitiga AM-10)
+  %% Zonas unificadas Z1..Z5 con E12/E13; VLAN y subred son atributos

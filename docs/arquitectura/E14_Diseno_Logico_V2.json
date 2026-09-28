@@ -1,0 +1,226 @@
+{
+  "proyecto": {
+    "nombre": "Red Centinela",
+    "tipo": "Diseño Lógico de Arquitectura de Red y Machine Learning",
+    "autor": "Mateo Jiménez Pérez",
+    "version": "2.0.0"
+  },
+  "infraestructura_logica": {
+    "descripcion_general": "Topología emulada mediante grupos de seguridad y namespaces en proveedores PaaS (Render, Neon, Streamlit Cloud). Las IPs /24 son asignaciones lógicas de referencia.",
+    "segmentos": [
+      {
+        "id": "Z1",
+        "nombre": "Z1 · Internet / Borde",
+        "subred": "10.20.0.0/24",
+        "nivel_seguridad": "Público con TLS",
+        "componentes": [
+          {
+            "id": "comp_ingress",
+            "nombre": "Render Ingress Gateway",
+            "funcion": "Reverse Proxy, balanceo de carga y terminación TLS",
+            "puertos_expuestos": [
+              443
+            ],
+            "protocolo": "HTTPS"
+          }
+        ],
+        "vlan": "VLAN 20 · Borde/DMZ"
+      },
+      {
+        "id": "Z2",
+        "nombre": "Z2 · Nube pública PaaS (Aplicación)",
+        "subred": "10.30.0.0/24",
+        "nivel_seguridad": "Privado con acceso controlado desde VLAN 20",
+        "componentes": [
+          {
+            "id": "P1",
+            "nombre": "Tablero Web de Monitoreo",
+            "tecnologia": "Streamlit",
+            "puerto_interno": 8501,
+            "descripcion": "Interfaz gráfica para el analista de seguridad. Materializa M2 (ingesta de contexto): carga manual de un archivo CSV de tráfico desde la interfaz; los vectores se envían a /predict (P2)."
+          },
+          {
+            "id": "P2",
+            "nombre": "API REST de Detección",
+            "tecnologia": "FastAPI + Modelos ML",
+            "puerto_interno": 8000,
+            "descripcion": "Motor de inferencia que procesa los vectores de red"
+          },
+          {
+            "id": "comp_cache",
+            "nombre": "Caché Local de Modelos",
+            "tipo": "Almacenamiento volátil en contenedor",
+            "formato_archivos": ".joblib",
+            "descripcion": "Evita latencia de red en peticiones posteriores a la carga; la primera petición tras un arranque en frío descarga el .joblib desde el almacén central."
+          },
+          {
+            "id": "P3",
+            "nombre": "Servicio de Alertas",
+            "tecnologia": "Tarea en segundo plano (cola interna)",
+            "puerto_interno": 8001,
+            "descripcion": "Evalúa el umbral del evento recibido de P2 y dispara la alerta a Telegram de forma ASÍNCRONA (cola/tarea en segundo plano), de modo que el envío no suma latencia al p95 de /predict. Vuelve a separar el salto P2 -> P3 -> Telegram que E12 y E13 modelan como proceso independiente."
+          }
+        ],
+        "vlan": "VLAN 30 · Capa de aplicación"
+      },
+      {
+        "id": "Z3",
+        "nombre": "Z3 · Datos gestionados",
+        "subred": "10.40.0.0/24",
+        "nivel_seguridad": "Acceso restringido por credencial. Endpoint público TLS (Neon Serverless); sin egress controlado por el proyecto.",
+        "componentes": [
+          {
+            "id": "comp_db",
+            "nombre": "PostgreSQL Server",
+            "proveedor": "Neon Serverless",
+            "puerto": 5432,
+            "seguridad": "Conexión cifrada obligatoria mediante TLS/SSL"
+          },
+          {
+            "id": "comp_model_store",
+            "nombre": "Almacén Central de Modelos",
+            "tipo": "Repositorio de artefactos binarios",
+            "formato_archivos": ".joblib"
+          }
+        ],
+        "vlan": "VLAN 40 · Capa de datos"
+      },
+      {
+        "id": "Z4",
+        "nombre": "Z4 · Terceros / SaaS y CI/CD",
+        "subred": "10.50.0.0/24",
+        "nivel_seguridad": "Restringido a integraciones de desarrollo",
+        "componentes": [
+          {
+            "id": "comp_github",
+            "nombre": "Repositorio de Código GitHub",
+            "funciones": [
+              "Control de versiones",
+              "Control de acceso RBAC"
+            ]
+          },
+          {
+            "id": "comp_actions",
+            "nombre": "GitHub Actions Runner",
+            "funcion": "Pipeline automatizado de pruebas, compilación y despliegue"
+          },
+          {
+            "id": "comp_telegram",
+            "nombre": "Telegram Bot API",
+            "funcion": "Canal externo de notificación inmediata de incidentes"
+          }
+        ],
+        "vlan": "VLAN 50 · Gestión y CD"
+      },
+      {
+        "id": "Z5",
+        "nombre": "Z5 · Entorno de desarrollo",
+        "subred": "N/A (Entorno Externo/Offline)",
+        "componentes": [
+          {
+            "id": "comp_train",
+            "nombre": "Entorno de Entrenamiento",
+            "plataformas": [
+              "Google Colab",
+              "Kaggle Notebooks"
+            ]
+          },
+          {
+            "id": "comp_dataset",
+            "nombre": "Dataset NSL-KDD",
+            "uso": "Datos de tráfico de red para entrenamiento y validación de intrusiones"
+          }
+        ],
+        "vlan": "Sin VLAN (N/A)",
+        "nivel_seguridad": "N/A"
+      }
+    ]
+  },
+  "flujos_comunicacion": [
+    {
+      "origen": "Cliente / Navegador del Analista",
+      "destino": "comp_ingress",
+      "protocolo": "HTTPS (TLS 1.3)",
+      "puerto": 443,
+      "tipo": "Petición Externa"
+    },
+    {
+      "origen": "P1",
+      "destino": "P2",
+      "protocolo": "HTTPS / JSON",
+      "puerto": 8000,
+      "endpoints": [
+        "/predict",
+        "/history"
+      ],
+      "tipo": "Llamada Interna a API"
+    },
+    {
+      "origen": "P2",
+      "destino": "comp_db",
+      "protocolo": "SQL over TLS",
+      "puerto": 5432,
+      "descripcion": "Inserción crítica en tiempo real de registros de tráfico analizados"
+    },
+    {
+      "origen": "comp_model_store",
+      "destino": "comp_cache",
+      "protocolo": "Internal File Transfer",
+      "descripcion": "Descarga de pesos del modelo durante la inicialización del contenedor"
+    },
+    {
+      "origen": "comp_train",
+      "destino": "comp_github",
+      "protocolo": "SSH / Git",
+      "accion": "git push de código y metadatos del modelo entrenado"
+    },
+    {
+      "origen": "comp_github",
+      "destino": "comp_actions",
+      "protocolo": "Webhook Interno",
+      "accion": "Disparo automático del pipeline al hacer push a la rama principal"
+    },
+    {
+      "origen": "comp_actions",
+      "destino": "comp_ingress",
+      "protocolo": "HTTPS API",
+      "tipo": "Despliegue automatizado con reinicio del servicio a un endpoint de despliegue dedicado (webhook autenticado por secreto compartido; riesgo aceptado por el nivel gratuito). Sin tiempo de inactividad NO es un objetivo soportado: el plan gratuito hiberna (ver E11, §1.6)."
+    },
+    {
+      "origen": "Cliente / Navegador del Analista",
+      "destino": "P1",
+      "protocolo": "HTTPS (TLS 1.3)",
+      "puerto": 443,
+      "tipo": "Endpoint público directo de Streamlit Cloud (*.streamlit.app); incluye subida del CSV de prueba (M2)"
+    },
+    {
+      "origen": "P2",
+      "destino": "P3",
+      "protocolo": "Interno (cola en memoria / Redis ligera)",
+      "tipo": "Evento de tráfico malicioso detectado"
+    },
+    {
+      "origen": "P3",
+      "destino": "comp_telegram",
+      "protocolo": "HTTPS REST (Bot API)",
+      "tipo": "Envío asíncrono de alertas (colas/tareas en segundo plano, no bloquea /predict)"
+    },
+    {
+      "origen": "comp_telegram",
+      "destino": "Cliente / Navegador del Analista",
+      "protocolo": "HTTPS push",
+      "tipo": "Notificación inmediata de incidentes al dispositivo"
+    }
+  ],
+  "acuerdos_nivel_servicio_y_seguridad": {
+    "metricas_rendimiento": {
+      "disponibilidad_sistema": ">= 95.0% en pruebas continuas (E11, §1.7) / >= 99.0% en el horario de la defensa (E9, objetivo O2). Métrica DASH-009",
+      "latencia_p95_inferencia": "<= 200 ms en /predict y /health, MEDIDA en pruebas, no garantizada por diseño de red (depende de Render y Neon). Métrica PERF-006",
+      "tiempo_entrega_alertas": "TTR <= 60 s (E11, E9) y >= 95% de entregas confirmadas por el API de Telegram. Métrica ALERT-010"
+    },
+    "politicas_seguridad": {
+      "integridad_datos": "0% de pérdida de registros en tránsito hacia Z3 (Métrica DATA-011)",
+      "aislamiento_credenciales": "Control que mitiga la amenaza AM-10 (E12): prohibido almacenar llaves o secretos en código; variables de entorno para la conexión entre servicios (Métricas SEG-007 y AM-10 como amenaza, no como política)"
+    }
+  }
+}
