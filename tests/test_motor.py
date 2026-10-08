@@ -5,7 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from motor.data import CATEGORICAL, FEATURE_NAMES, MODEL_DIR, NUMERIC_COLUMNS, load_raw
+from api.main import _disponible
+from motor.data import CATEGORICAL, FEATURE_NAMES, NUMERIC_COLUMNS, load_raw
 from motor.preprocess import Preprocessor
 
 
@@ -44,8 +45,7 @@ def test_columnas_correctas():
     assert CATEGORICAL == ["protocol_type", "service", "flag"]
 
 
-@pytest.mark.skipif(not (MODEL_DIR / "metadata.json").exists(),
-                    reason="modelos no entrenados")
+@pytest.mark.skipif(not _disponible(), reason="modelos no entrenados")
 def test_ensamble_predice_binario():
     from motor.ensemble import cargar_modelos, predecir
 

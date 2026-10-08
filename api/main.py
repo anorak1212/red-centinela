@@ -50,7 +50,10 @@ def _cargar_modelos() -> dict:
 
 
 def _disponible() -> bool:
-    return (MODEL_DIR / "metadata.json").exists()
+    if not (MODEL_DIR / "metadata.json").exists():
+        return False
+    return all((MODEL_DIR / f"{nombre}.joblib").exists()
+               for nombre in ("rf", "svm", "knn", "iforest", "preprocessor"))
 
 
 def _sistema():

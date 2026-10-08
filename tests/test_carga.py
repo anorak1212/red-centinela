@@ -13,12 +13,12 @@ from unittest.mock import patch
 
 import joblib
 import pytest
+from api.main import _disponible
 from conftest import entrenar_en, frame_sintetico
-from motor.data import MODEL_DIR
 from motor.ensemble import predecir
 from test_api import _NORMAL  # fila válida de 41 campos (módulo hermano)
 
-_MODELOS = (MODEL_DIR / "metadata.json").exists()
+_MODELOS = _disponible()
 
 
 def _modelos_entrenados(tmp_path):

@@ -89,8 +89,10 @@ def test_historial_limitado_sin_registros(tmp_path):
 
 
 def _modelos_falsos(tmp_path):
-    """MODEL_DIR 'disponible' sin modelos: la validación corre antes de cargar."""
+    """MODEL_DIR 'disponible' sin modelos reales: la validación corre antes de cargar."""
     (tmp_path / "metadata.json").write_text("{}", encoding="utf-8")
+    for nombre in ("rf", "svm", "knn", "iforest", "preprocessor"):
+        (tmp_path / f"{nombre}.joblib").write_bytes(b"zzz")
     return patch("api.main.MODEL_DIR", tmp_path)
 
 
