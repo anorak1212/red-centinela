@@ -36,5 +36,4 @@ api/data/
 .vscode/
 .DS_Store
 Thumbs.db
-# CI workflow: excluido temporalmente hasta tener permiso 'workflow' en el token
-.github/
+
