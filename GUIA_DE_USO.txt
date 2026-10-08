@@ -2,7 +2,7 @@
 RED CENTINELA · GUIA DE USO RAPIDA
 Plataforma modular de monitoreo y alerta de trafico de red (ML)
 UAEMex · Gestion de Proyectos · Mateo Jimenez Perez
-Ultima actualizacion: 28/09/2026 (semanas 7-8 del cronograma)
+Ultima actualizacion: 08/10/2026 (semana 8 del cronograma)
 ========================================================================
 
 QUE HAY EN EL PROYECTO
@@ -18,7 +18,7 @@ QUE HAY EN EL PROYECTO
               se conecta en la fase E5 con token y chat id.
   datasets/   Dataset NSL-KDD (no versionado) y CSV de ejemplo
               sample_trafico.csv para probar el tablero.
-  tests/      14 pruebas automatizadas.
+  tests/      41 pruebas automatizadas (40 verdes + 1 omitida),
   scripts/    Utilidades (descarga del dataset).
   docs/       Documentacion de arquitectura.
 
@@ -46,6 +46,12 @@ ARRANQUE PASO A PASO (una sola vez: pasos 1 al 3)
 
   3. Verificacion automatizada:
        pytest
+
+  NOTA (maquina DTIC1, 08/10/2026): el .venv que venia en el ZIP apunta
+  a otro equipo y no arranca aqui. Se creo .venv_local con Python 3.13:
+       python -m venv .venv_local
+       .venv_local\Scripts\python.exe -m pip install -r requirements.txt
+  Usar .venv_local\Scripts\python.exe en todos los comandos de abajo.
 
 
 USO DIARIO (demos)
@@ -101,15 +107,21 @@ RESULTADOS DEL MODELO (para reportar)
   entrenamiento (r2l, u2r); ~0.80 es el techo conocido en la literatura.
 
 
-POSICION EN EL CRONOGRAMA (corte 28/09/2026, semana 7 de 15)
+POSICION EN EL CRONOGRAMA (corte 08/10/2026, semana 8 de 15)
 ------------------------------------------------------------------------
   H01 Repositorio+EDA .... 1 sep   OK
   H02 Motor ML ........... 25 sep  OK (macro-F1 0.998 train)
-  H03 API REST ........... 12 oct  OK (adelantado)
-  H04 Tablero ............ 23 oct  OK (adelantado)
+  H03 API REST ........... 12 oct  OK (adelantado, verificado 08/10)
+  H04 Tablero ............ 23 oct  OK (adelantado, verificado 08/10)
   H05 Alertas Telegram ... 6 nov   PENDIENTE (falta token del bot, fase E5)
-  H06 Docs + Video ....... 17 nov  PENDIENTE
+  H06 Docs + Video ....... 17 nov  PENDIENTE (manual de usuario ya existe)
   E7  Defensa ........... 18 nov   PENDIENTE
+
+  Verificado el 08/10/2026: ruff limpio, 40 pruebas + 1 omitida,
+  cobertura 99 %, /health 200, lote de 60 filas con 30/30 ataques,
+  Streamlit 200. Pendiente: A30 (CLI) y A31 (CI, bloqueada por el
+  scope 'workflow' del token de GitHub). Siguiente bloque: A33
+  despliegue en Render/Neon/Streamlit Cloud, 09-13/10.
 
   Deploy final (E6): tablero en Streamlit Community Cloud, la lap
   solo abre el navegador.

@@ -1,5 +1,6 @@
 # Entornos
 .venv/
+.venv_local/
 venv/
 env/
 

@@ -35,7 +35,10 @@ def test_filas_desde_csv_rechaza_encabezado_invalido(tmp_path):
 def _api_disponible() -> bool:
     try:
         return salud().get("status") == "ok"
-    except ApiError:
+    except (ApiError, OSError):
+        # ApiError si la API contestó mal; OSError (p. ej. ConnectionError
+        # de `requests`) si la API no está levantada: la prueba se omite en
+        # vez de romper la colección de todo pytest (importante en CI).
         return False
 
 
