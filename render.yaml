@@ -1,0 +1,52 @@
+# Blueprint de Render para la API de Red Centinela.
+#
+# Plan gratuito, sin tarjeta: el servicio se duerme tras 15 minutos sin
+# tráfico y despierta en unos 50 s. El tablero no espera a que despierte solo:
+# tiene el botón "Despertar servicio" que sondea /health hasta 90 s.
+#
+# Los artefactos del modelo NO viven en Git (80 MB). Se publican como release y
+# el build los baja con scripts/descargar_artefactos.py. Sin esa URL el build
+# falla a propósito: mejor un despliegue fallido y visible que un servicio
+# arriba sin modelo que responde "degradado" y confunde en la demo.
+#
+# Desplegar:
+#   1. python scripts/empaquetar_artefactos.py
+#   2. gh release create modelos-v1 dist/modelos_red_centinela.tar.gz
+#   3. En Render: New > Blueprint, apuntar a este repositorio y llenar las
+#      variables marcadas con sync: false.
+services:
+  - type: web
+    name: red-centinela-api
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt && python scripts/descargar_artefactos.py
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: REDCENTINELA_MODELOS_URL
+        sync: false
+      # SHA-256 del paquete. Evita servir un modelo cambiado sin que nadie note.
+      - key: REDCENTINELA_MODELOS_SHA256
+        sync: false
+      # Cadena de Neon. Sin ella el historial cae en SQLite, que en Render se
+      # borra en cada despliegue: el tablero mostraría el historial vacío.
+      - key: DATABASE_URL
+        sync: false
+      - key: REDCENTINELA_TELEGRAM_TOKEN
+        sync: false
+      - key: REDCENTINELA_TELEGRAM_CHAT_ID
+        sync: false
+      # 120 peticiones por minuto y por IP en /predict. El tablero va detrás de
+      # un servidor, así que todas sus llamadas comparten IP.
+      - key: REDCENTINELA_RATE_LIMIT
+        value: "240"
+      # El tablero llama a la API desde el servidor de Streamlit Cloud, no desde
+      # el navegador: CORS no interviene. Se deja explícito por si alguien
+      # consume la API desde un navegador.
+      - key: REDCENTINELA_ORIGENES
+        value: https://red-centinela.streamlit.app
