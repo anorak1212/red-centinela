@@ -20,7 +20,7 @@ services:
     runtime: python
     plan: free
     region: oregon
-    branch: main
+    branch: final
     autoDeploy: true
     buildCommand: pip install -r requirements.txt && python scripts/descargar_artefactos.py
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT --workers 1

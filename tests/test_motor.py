@@ -156,7 +156,10 @@ def test_metadata_declara_modelo_de_produccion():
 # --------------------------------------------------------------------------
 # Predicción con artefactos reales
 # --------------------------------------------------------------------------
-@pytest.mark.skipif(not _HAY_MODELOS, reason="modelos no entrenados")
+@pytest.mark.skipif(
+    not _HAY_MODELOS or not (MODEL_DIR.parent.parent / "datasets/raw/KDDTrain+.txt").exists(),
+    reason="modelos no entrenados o NSL-KDD no descargado",
+)
 def test_prediccion_binaria_y_multiclase():
     modelos = cargar_modelos(MODEL_DIR, verificar=True)
     umbral = float(modelos["metadata"]["umbral_decision"])
