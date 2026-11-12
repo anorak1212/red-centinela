@@ -1,6 +1,6 @@
 # Suite de pruebas
 
-123 pruebas que no necesitan red ni el dataset completo. Las que dependen de los
+124 pruebas que no necesitan red ni el dataset completo. Las que dependen de los
 artefactos entrenados (80 MB, fuera de Git) se omiten solas en un clon limpio.
 
 ## Cómo se corre
@@ -14,7 +14,7 @@ python -m coverage report
 ruff check .
 ```
 
-Con artefactos en `motor/models/`: 123 pruebas, 84 % de cobertura. Sin ellos: se
+Con artefactos en `motor/models/`: 124 pruebas, 84 % de cobertura. Sin ellos: se
 omiten 15 y la cobertura medida baja a 69 %, porque `motor/train.py` y
 `motor/evaluate.py` quedan sin ejercitar (están excluidos del cálculo en
 `pyproject.toml`).
@@ -31,7 +31,7 @@ omiten 15 y la cobertura medida baja a 69 %, porque `motor/train.py` y
 | `test_db.py` | SQLite y PostgreSQL: creación, inserción, historial, migración idempotente | 13 |
 | `test_alertas.py` | Telegram: agrupación por ventana, reintentos, sin token no envía | 12 |
 | `test_cli.py` | `train`, `evaluate`, `predict`, `estado`, códigos de salida | 7 |
-| `test_tablero.py` | cliente HTTP, validación del CSV, las cinco vistas y dos botones reales | 21 |
+| `test_tablero.py` | cliente HTTP, validación del CSV, las seis vistas y dos botones reales | 22 |
 | `test_despliegue.py` | empaquetado con manifiesto, descarga por HTTP, SHA-256, extracción plana | 10 |
 
 `test_tablero.py` incluye tres pruebas que solo corren con la API levantada

@@ -72,7 +72,7 @@ dos está en Git. Un clon limpio necesita los pasos 1 y 2 antes de arrancar la A
 
 ```powershell
 ruff check .                                   # estilo y errores
-python -m pytest -q                             # 123 pruebas
+python -m pytest -q                             # 124 pruebas
 python -m coverage run -m pytest -q
 python -m coverage report                       # 84 % con artefactos
 python scripts\smoke_prod.py --api http://127.0.0.1:8000

@@ -24,7 +24,7 @@ QUE HAY EN EL PROYECTO
   datasets/   NSL-KDD crudo (no versionado) y muestras de prueba.
   scripts/    Descarga del dataset, empaquetado de artefactos, humo
               contra produccion.
-  tests/      123 pruebas automatizadas, 84 % de cobertura.
+  tests/      124 pruebas automatizadas, 84 % de cobertura.
   docs/       Arquitectura, informe de metricas, solicitud de cambio.
 
 

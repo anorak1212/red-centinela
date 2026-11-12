@@ -133,7 +133,9 @@ def test_api_caida_lanza_apierror_con_la_url():
 # --------------------------------------------------------------------------
 # Render de las vistas con la API caída
 # --------------------------------------------------------------------------
-@pytest.mark.parametrize("vista", ["resumen", "analizar", "historial", "modelo", "ayuda"])
+@pytest.mark.parametrize(
+    "vista", ["resumen", "analizar", "historial", "modelo", "sistema", "ayuda"]
+)
 def test_vista_renderiza_sin_api(vista):
     at = AppTest.from_string(
         GUION_VISTA.format(raiz=RAIZ, nombre=vista), default_timeout=120
