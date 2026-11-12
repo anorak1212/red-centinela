@@ -12,7 +12,21 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["motor", "api", "alertas", "cli"]
-omit = ["*/tests/*"]
+omit = [
+    "*/tests/*",
+    # Puntos de entrada que entrenan sobre las 125,973 filas reales y reescriben
+    # los artefactos: su evidencia es la ejecución completa documentada en
+    # docs/INFORME_METRICAS.md, no una prueba unitaria. La lógica de cálculo de
+    # ambos módulos sí se prueba en tests/test_metricas.py.
+    "motor/train.py",
+    "motor/evaluate.py",
+    "*/motor/train.py",
+    "*/motor/evaluate.py",
+]
 
 [tool.coverage.report]
 fail_under = 80
+
+[tool.ruff.lint.per-file-ignores]
+# El informe se arma como lista de líneas largas con concatenación implícita.
+"motor/evaluate.py" = ["ISC004"]

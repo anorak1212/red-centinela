@@ -25,6 +25,8 @@ datasets/raw/
 datasets/processed/
 motor/models/*.joblib
 motor/models/*.pkl
+# Modelos anteriores (knn 60 MB, svm): se conservan en disco, no en Git.
+motor/models/anteriores/
 motor/resultados/
 api/data/
 *.db
@@ -35,5 +37,12 @@ api/data/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Despliegue
+dist/
+.streamlit/secrets.toml
+
 # CI workflow: excluido temporalmente hasta tener permiso 'workflow' en el token
+# de GitHub. Cuando el token lo tenga: borrar esta línea y commitear .github/.
+# El archivo .github/workflows/ci.yml ya está escrito y probado en local.
 .github/
