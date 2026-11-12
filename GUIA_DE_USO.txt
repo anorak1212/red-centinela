@@ -2,25 +2,30 @@
 RED CENTINELA · GUIA DE USO RAPIDA
 Plataforma modular de monitoreo y alerta de trafico de red (ML)
 UAEMex · Gestion de Proyectos · Mateo Jimenez Perez
-Ultima actualizacion: 28/09/2026 (semanas 7-8 del cronograma)
+Ultima actualizacion: 11/11/2026 (cierre, antes de la defensa del 18/11)
 ========================================================================
 
 QUE HAY EN EL PROYECTO
 ------------------------------------------------------------------------
-  motor/      Motor ML: carga NSL-KDD, preprocesado, entrenamiento del
-              ensamble (Random Forest + SVM + KNN + Isolation Forest),
-              evaluacion (macro-F1, AUC) y serializacion con joblib.
+  motor/      Motor ML: carga NSL-KDD, preprocesado (one-hot +
+              estandarizacion), Random Forest con dos cabezas (binaria y
+              cinco clases), Isolation Forest de apoyo, umbral calibrado
+              sobre holdout interno, evaluacion sobre KDDTest+.
   api/        API REST FastAPI: /health, /predict, /predict/batch,
-              /history, con persistencia SQLite.
-  tablero/    Panel Streamlit: prediccion en vivo, carga de CSV por
-              lote e historial con graficas.
-  alertas/    Modulo de alertas Telegram (M5). Interfaz lista; el bot
-              se conecta en la fase E5 con token y chat id.
-  datasets/   Dataset NSL-KDD (no versionado) y CSV de ejemplo
-              sample_trafico.csv para probar el tablero.
-  tests/      14 pruebas automatizadas.
-  scripts/    Utilidades (descarga del dataset).
-  docs/       Documentacion de arquitectura.
+              /history, /metrics y /alertas. Historial en PostgreSQL
+              (Neon) o SQLite en local.
+  tablero/    Panel Streamlit de cinco vistas: Resumen, Analizar,
+              Historial, Modelo y metricas, Ayuda. No carga modelos:
+              solo consume la API.
+  alertas/    Bot de Telegram con agrupacion por ventana de 10 s y
+              confirmacion real de entrega (ok:true). Falta el token.
+  cli/        Operacion por linea de comandos (train, evaluate, predict,
+              serve, estado, alerta-prueba).
+  datasets/   NSL-KDD crudo (no versionado) y muestras de prueba.
+  scripts/    Descarga del dataset, empaquetado de artefactos, humo
+              contra produccion.
+  tests/      123 pruebas automatizadas, 84 % de cobertura.
+  docs/       Arquitectura, informe de metricas, solicitud de cambio.
 
 
 REQUISITOS
@@ -34,100 +39,151 @@ ARRANQUE PASO A PASO (una sola vez: pasos 1 al 3)
   git clone https://github.com/anorak1212/red-centinela.git
   cd red-centinela
   python -m venv .venv
-  .venv\Scripts\activate
+  .\.venv\Scripts\Activate.ps1
   pip install -r requirements.txt
+  pip install -r requirements-dev.txt
 
   1. Dataset publico NSL-KDD (~26 MB):
-       python scripts/download_nslkdd.py
+       python scripts\download_nslkdd.py
 
-  2. Entrenar modelos (una vez, ~10 min) y evaluar:
-       python -m motor.train
-       python -m motor.evaluate
+  2. Entrenar modelos (~2 minutos) y evaluar sobre KDDTest+:
+       python -m cli train
+       python -m cli evaluate
 
   3. Verificacion automatizada:
-       pytest
+       ruff check .
+       python -m pytest -q
 
 
 USO DIARIO (demos)
 ------------------------------------------------------------------------
   Terminal 1: API  ->  http://127.0.0.1:8000/docs
-       uvicorn api.main:app
+       python -m cli serve
 
-  Terminal 2: Tablero  ->  http://127.0.0.1:8501
+  Terminal 2: Tablero  ->  http://localhost:8501
        streamlit run tablero/app.py
 
-  Datos de memoria: la API y el tablero juntos gastan ~400 MB SOLO
-  mientras estan abiertos. Al cerrar las terminales, consumo en 0.
-  No se uso WSL (es una maquina virtual que gasta recursos); el
-  entrenamiento pesado pasa a Google Colab en la siguiente fase.
+  Comprobar el sistema sin abrir el navegador:
+       python -m cli estado
+
+  Recorrido de humo completo (prediccion, lote de 150 filas, latencia):
+       python scripts\smoke_prod.py --api http://127.0.0.1:8000
+
+  Consumo: la API carga ~80 MB de modelos en memoria y tarda unos 25 s en
+  arrancar. El tablero gasta aparte. Al cerrar las terminales, 0.
 
 
-COMO USAR EL TABLERO (3 pestanas)
+COMO USAR EL TABLERO (5 vistas)
 ------------------------------------------------------------------------
-  1. PREDICCION EN VIVO
-       Llenar el formulario (41 campos) y dar "Predecir".
-       Fila normal de ejemplo: protocol_type tcp, service http,
-       flag SF, src_bytes 200, el resto en 0 -> resultado NORMAL.
+  1. RESUMEN
+       Estado del servicio (integridad de artefactos, umbral, almacen),
+       conteo de predicciones y ataques, grafica de probabilidad,
+       composicion por clase y estado de las alertas.
 
-  2. CARGA CSV POR LOTE
-       Subir datasets\sample_trafico.csv (60 filas: 30 normales,
-       30 ataques) y dar "Predecir lote".
-       Esperado: 30 ataques detectados. Se puede descargar el CSV
-       con los resultados.
+  2. ANALIZAR
+       Pestana "Conexion individual": elegir una fila real de KDDTest+
+       por familia (normal, dos, probe, r2l, u2r), editarla en JSON si
+       se quiere y predecir. La etiqueta real se muestra al lado para
+       que se vea si el modelo acierta.
+       Pestana "Archivo CSV": subir datasets\sample_etiquetado.csv
+       (150 filas, 30 por familia) y ver deteccion y acierto por familia
+       por separado. Se puede descargar el resultado.
 
   3. HISTORIAL
-       Ultimas 200 predicciones con grafica de probabilidad de
-       ataque. Todo queda persistido en SQLite (api/data/redcentinela.db).
+       Ultimas 50 a 500 predicciones, filtros por origen y clase,
+       descarga en CSV y vista de las 41 caracteristicas de un registro.
 
-  Boton "Disparar alerta" (barra lateral): conecta al modulo M5.
-  Si no hay token de Telegram configurado, responde el motivo y no
-  envia nada (comportamiento esperado hasta la fase E5).
+  4. MODELO Y METRICAS
+       Cifras reales de KDDTest+, desglose por familia, KDDTest-21,
+       holdout interno, latencia y comparativa de modelos. Nada se
+       escribe a mano: sale de motor/models/metrics.json.
+
+  5. AYUDA
+       Contrato de la API, variables de entorno y que significa cada
+       cifra. Incluye lo que el sistema NO hace.
+
+  Barra lateral: URL de la API, "Comprobar conexion" y "Despertar
+  servicio" (sondea /health hasta 90 s, util con el plan gratuito).
 
 
 ENDPOINTS DE LA API
 ------------------------------------------------------------------------
-  GET  /health          Estado de la API y metricas del ensamble.
-  POST /predict         Predice UNA fila. Body: {"features": {...41 campos...}}
-  POST /predict/batch   Predice un lote. Body: {"items": [{"features": {...}}, ...]}
-  GET  /history?limit=200   Ultimas predicciones guardadas.
+  GET  /health              Estado, integridad y umbral. ?reverificar=true
+                            vuelve a hashear los 80 MB de artefactos.
+  GET  /metrics             Cifras del modelo.
+  POST /predict             Una fila. Body: {"features": {...41 campos...}}
+  POST /predict/batch       Lote hasta 500. Body: {"items": [{"features": {...}}]}
+  GET  /history?limit=200   Predicciones guardadas (1 a 500).
+  GET  /history/resumen     Conteos agregados que alimentan el tablero.
+  GET  /alertas/estado      Si el bot esta configurado y cuantos envios hubo.
+  POST /alertas/prueba      Envia un mensaje real al chat configurado.
   La documentacion interactiva (Swagger) vive en /docs.
 
 
 RESULTADOS DEL MODELO (para reportar)
 ------------------------------------------------------------------------
-  KDDTest+ (datos nunca vistos): macro-F1 0.788, AUC 0.965.
-  Holdout de entrenamiento (criterio del plan, macro-F1 >= 0.90): 0.998.
-  Nota honesta: KDDTest+ incluye ataques que no existen en el
-  entrenamiento (r2l, u2r); ~0.80 es el techo conocido en la literatura.
+  KDDTest+ (datos nunca vistos, 22,544 filas):
+    macro-F1 binario 0.7995 · exactitud 0.7998 · AUC 0.9616
+    precision de ataque 0.9689 · recall de ataque 0.6698
+    macro-F1 cinco clases 0.4716 · F1 ponderado 0.6894
+  KDDTest-21 (solo dificiles, 11,850 filas):
+    macro-F1 binario 0.5808 · cinco clases 0.3734
+  Holdout de entrenamiento: 0.9992 binario. NO es prueba independiente.
+
+  Nota honesta: el criterio del proyecto pedia macro-F1 >= 0.90 sobre
+  KDDTest+. No se cumple, y no por un error de implementacion: KDDTest+
+  trae familias de ataque que no existen en entrenamiento (recall de
+  r2l 0.09, de u2r 0.18). La literatura reporta ~0.80 como techo. El
+  cambio de criterio esta en docs/SOLICITUD_CAMBIO_PERF-003.md.
 
 
-POSICION EN EL CRONOGRAMA (corte 28/09/2026, semana 7 de 15)
+DESPLIEGUE GRATUITO (DEPLOY-013)
 ------------------------------------------------------------------------
-  H01 Repositorio+EDA .... 1 sep   OK
-  H02 Motor ML ........... 25 sep  OK (macro-F1 0.998 train)
-  H03 API REST ........... 12 oct  OK (adelantado)
-  H04 Tablero ............ 23 oct  OK (adelantado)
-  H05 Alertas Telegram ... 6 nov   PENDIENTE (falta token del bot, fase E5)
-  H06 Docs + Video ....... 17 nov  PENDIENTE
-  E7  Defensa ........... 18 nov   PENDIENTE
+  1. Artefactos:  python scripts\empaquetar_artefactos.py
+     Genera dist\modelos_red_centinela.tar.gz (17 MB) y su SHA-256.
+     Se publica como release de GitHub.
+  2. API en Render: blueprint render.yaml, plan free, health check en
+     /health. Se duerme a los 15 min y despierta en ~50 s.
+  3. Historial en Neon: copiar la cadena en DATABASE_URL. Sin ella el
+     servicio usa SQLite, que en Render se borra en cada despliegue.
+  4. Tablero en Streamlit Community Cloud: archivo tablero/app.py,
+     dependencias tablero/requirements.txt, REDCENTINELA_API apuntando a
+     la API de Render.
+  5. Antes de la demo: boton "Despertar servicio" en la barra lateral.
 
-  Deploy final (E6): tablero en Streamlit Community Cloud, la lap
-  solo abre el navegador.
+
+ESTADO DE ENTREGABLES (corte 11/11/2026)
+------------------------------------------------------------------------
+  M1 Repositorio + EDA .... OK
+  M2 Motor ML ............. OK (criterio PERF-003 no cumplido, documentado)
+  M3 API REST ............. OK
+  M4 Tablero .............. OK
+  M5 Alertas Telegram ..... CODIGO LISTO, falta token y chat id
+  M6 Despliegue ........... PENDIENTE de cuentas (Render, Neon, Streamlit)
+  CI/CD ................... ESCRITO, bloqueado por permiso `workflow` del token
+  Video y ensayo .......... PENDIENTES
 
 
 SOLUCION DE PROBLEMAS
 ------------------------------------------------------------------------
-  "API no disponible" en el tablero:
-    Arrancar la terminal 1 (uvicorn) antes del tablero.
+  "La API no responde" en el tablero:
+    Arrancar la API (python -m cli serve) o pulsar "Despertar servicio"
+    si es el servicio desplegado y esta dormido.
 
   /predict devuelve 503:
-    Faltan los modelos -> volver a ejecutar python -m motor.train.
+    Faltan los modelos. Ejecutar python -m cli train.
 
   El CSV de lote se rechaza:
-    El encabezado debe traer EXACTAMENTE las 41 columnas del NSL-KDD
-    (mismo formato que datasets/sample_trafico.csv).
+    El encabezado debe traer EXACTAMENTE las 41 columnas del NSL-KDD.
+    Se admiten ademas label y family como verdad, y no se envian a la API.
+
+  El historial aparece vacio tras desplegar:
+    Falta DATABASE_URL. SQLite en Render no persiste entre despliegues.
+
+  "Artefactos NO verificados" en el resumen:
+    Alguien reemplazo o borro un .joblib. Revisar motor/models/ antes de
+    usar la API; el boton "Reverificar artefactos ahora" lo confirma.
 
   Lap lenta:
-    No es el proyecto (apagado consume 0). Revisar navegador con
-    muchas pestanas. El entrenamiento pesado se hace en Colab.
+    No es el proyecto (apagado consume 0). Revisar el navegador.
 ========================================================================
