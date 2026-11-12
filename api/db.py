@@ -308,6 +308,14 @@ def resumen() -> dict:
         " FROM predicciones"
     )
     sql_clases = "SELECT clase, COUNT(*) AS n FROM predicciones GROUP BY clase"
+    # Las dos cabezas deciden por separado: el binario puede marcar ataque y el
+    # multiclase no reconocer ninguna de las cuatro familias. Esas filas suman en
+    # "ataques" pero no en "por_clase", y sin contarlas aparte el tablero muestra
+    # totales que no cuadran. No se reescribe el historial: se cuenta y se explica.
+    sql_sin_familia = (
+        "SELECT COUNT(*) AS n FROM predicciones"
+        " WHERE es_ataque = 1 AND clase = 'normal'"
+    )
     with _lock:
         if motor() == "postgres":
             con = _conexion_postgres()
@@ -317,6 +325,8 @@ def resumen() -> dict:
                     base = cur.fetchone()
                     cur.execute(sql_clases)
                     por_clase = {r["clase"]: int(r["n"]) for r in cur.fetchall()}
+                    cur.execute(sql_sin_familia)
+                    sin_familia = int(cur.fetchone()["n"] or 0)
             finally:
                 con.close()
         else:
@@ -326,6 +336,7 @@ def resumen() -> dict:
                 por_clase = {
                     r["clase"]: int(r["n"]) for r in con.execute(sql_clases).fetchall()
                 }
+                sin_familia = int(con.execute(sql_sin_familia).fetchone()["n"] or 0)
             finally:
                 con.close()
     total = int(base["total"] or 0)
@@ -335,6 +346,8 @@ def resumen() -> dict:
         "ataques": ataques,
         "normales": total - ataques,
         "por_clase": por_clase,
+        "sin_familia": sin_familia,
+        "con_familia": max(0, ataques - sin_familia),
         "primero": base["primero"],
         "ultimo": base["ultimo"],
         "almacen": descripcion(),

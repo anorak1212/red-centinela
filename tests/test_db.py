@@ -71,6 +71,23 @@ def test_resumen_cuadra():
     assert despues["por_clase"].get("probe", 0) >= 1
 
 
+def test_resumen_separa_los_ataques_sin_familia():
+    """Un ataque que el multiclase deja en "normal" suma en ataques, no en por_clase.
+
+    Es el caso real de R2L y U2R: el binario los detecta y la cabeza multiclase no
+    los reconoce. El resumen debe poder explicar la diferencia en vez de mostrar
+    totales que no cuadran.
+    """
+    db.init_db()
+    antes = db.resumen()
+    db.guardar_resultado(features={}, **_resultado(es_ataque=True, clase="normal"))
+    despues = db.resumen()
+    assert despues["ataques"] == antes["ataques"] + 1
+    assert despues["sin_familia"] == antes["sin_familia"] + 1
+    assert despues["con_familia"] == despues["ataques"] - despues["sin_familia"]
+    assert sum(despues["por_clase"].values()) == despues["total"]
+
+
 def test_marcar_alerta_no_falla_con_id_inexistente():
     db.init_db()
     db.marcar_alerta(999_999, True)  # no debe lanzar

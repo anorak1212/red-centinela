@@ -5,7 +5,7 @@ Comprueba, en este orden y sin inventar nada:
     1. GET  /health                      debe responder 200 y con artefactos íntegros
     2. GET  /metrics                     cifras del modelo
     3. POST /predict                     una conexión normal
-    4. POST /predict/batch               muestra etiquetada de datasets/sample_etiquetado.csv
+    4. POST /predict/batch               la muestra indicada en --muestra
     5. GET  /history                     el registro recién creado sigue ahí
     6. latencia p95 de /predict          N peticiones medidas, no estimadas
     7. GET  del tablero                  debe responder 200 (si se pasa --tablero)
@@ -13,8 +13,12 @@ Comprueba, en este orden y sin inventar nada:
 
 Uso:
     python -m scripts.smoke_prod --api http://127.0.0.1:8000
-    python -m scripts.smoke_prod --api https://red-centinela.onrender.com \
-        --tablero https://red-centinela.streamlit.app --telegram
+    python -m scripts.smoke_prod --api https://red-centinela-api.onrender.com \
+        --tablero https://red-centinela.streamlit.app \
+        --muestra datasets/sample_trafico.csv --esperado-ataques 30
+
+Con una muestra sin columna `family` no se pueden medir familias: se compara el
+número de ataques predichos contra --esperado-ataques y se dice cuál era.
 
 Todo lo que no se pueda comprobar se reporta como SALTADO o FALLO; nunca se
 declara éxito sin evidencia.
@@ -146,18 +150,19 @@ def _predict_una(api: str, res: Resultado) -> int | None:
     return int(body["id"])
 
 
-def _predict_lote(api: str, res: Resultado) -> list[int]:
-    if not MUESTRA.exists():
+def _predict_lote(api: str, res: Resultado, ruta: Path,
+                  esperado: int | None) -> list[int]:
+    if not ruta.exists():
         res.add("POST /predict/batch", "SALTADO",
-                "falta datasets/sample_etiquetado.csv; ejecuta "
-                "python -m scripts.build_sample_etiquetado")
+                f"falta {ruta}; indícalo con --muestra")
         return []
 
-    df = pd.read_csv(MUESTRA)
+    df = pd.read_csv(ruta)
+    etiquetas = [c for c in ("label", "family") if c in df.columns]
     items = [
         {"features": {k: (str(v) if k in ("protocol_type", "service", "flag") else v)
                       for k, v in fila.items()}}
-        for fila in df.drop(columns=["label", "family"]).to_dict("records")
+        for fila in df.drop(columns=etiquetas).to_dict("records")
     ]
     r = requests.post(f"{api}/predict/batch", json={"items": items}, timeout=TIMEOUT)
     if r.status_code != 200:
@@ -166,24 +171,40 @@ def _predict_lote(api: str, res: Resultado) -> list[int]:
 
     body = r.json()
     pred = pd.DataFrame(body["resultados"])
-    pred["real"] = df["family"].to_numpy()
-    pred["es_ataque_real"] = pred["real"] != "normal"
+    ataques = int(pred["es_ataque"].sum())
+    reparto = ", ".join(
+        f"{c} {int(n)}" for c, n in pred["clase"].value_counts().items()
+    )
 
-    ataques = pred[pred["es_ataque_real"]]
-    normales = pred[~pred["es_ataque_real"]]
-    detectados = int(ataques["es_ataque"].sum())
-    falsos = int(normales["es_ataque"].sum())
-    detalle_familias = ", ".join(
-        f"{f} {int(g['es_ataque'].sum())}/{len(g)}"
-        for f, g in ataques.groupby("real")
-    )
-    estado = "OK" if detectados == len(ataques) and falsos == 0 else "PARCIAL"
-    res.add(
-        "POST /predict/batch",
-        estado,
-        f"{body['total']} filas, ataques {detectados}/{len(ataques)} "
-        f"({detalle_familias}), falsos positivos {falsos}/{len(normales)}",
-    )
+    if "family" in df.columns:
+        pred["real"] = df["family"].to_numpy()
+        pred["es_ataque_real"] = pred["real"] != "normal"
+        reales = pred[pred["es_ataque_real"]]
+        normales = pred[~pred["es_ataque_real"]]
+        detectados = int(reales["es_ataque"].sum())
+        falsos = int(normales["es_ataque"].sum())
+        detalle_familias = ", ".join(
+            f"{f} {int(g['es_ataque'].sum())}/{len(g)}"
+            for f, g in reales.groupby("real")
+        )
+        estado = "OK" if detectados == len(reales) and falsos == 0 else "PARCIAL"
+        res.add(
+            "POST /predict/batch",
+            estado,
+            f"{body['total']} filas, ataques {detectados}/{len(reales)} "
+            f"({detalle_familias}), falsos positivos {falsos}/{len(normales)}",
+        )
+    else:
+        # Muestra sin etiquetas: lo único honesto es comparar contra el número
+        # esperado que declara quien llama, y decir cuál era.
+        if esperado is None:
+            estado = "INFORMATIVO"
+            detalle = f"{body['total']} filas, {ataques} ataques predichos ({reparto})"
+        else:
+            estado = "OK" if ataques == esperado else "FALLO"
+            detalle = (f"{body['total']} filas, {ataques} ataques predichos, "
+                       f"esperados {esperado} ({reparto})")
+        res.add("POST /predict/batch", estado, detalle)
     return [int(body["resultados"][0]["id"]), int(body["resultados"][-1]["id"])]
 
 
@@ -277,6 +298,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--telegram", action="store_true", help="probar el envío de alertas")
     p.add_argument("--latencia", type=int, default=30, help="peticiones medidas")
     p.add_argument("--espera", type=int, default=120, help="segundos de arranque en frío")
+    p.add_argument("--muestra", default=str(MUESTRA),
+                   help="CSV para /predict/batch (con etiquetas o sin ellas)")
+    p.add_argument("--esperado-ataques", type=int, default=None,
+                   help="ataques que debe predecir la muestra sin etiquetas")
     args = p.parse_args(argv)
 
     api = args.api.rstrip("/")
@@ -290,7 +315,7 @@ def main(argv: list[str] | None = None) -> int:
     _health(api, res)
     _metrics(api, res)
     ident = _predict_una(api, res)
-    ids = _predict_lote(api, res)
+    ids = _predict_lote(api, res, Path(args.muestra), args.esperado_ataques)
     if ident is not None:
         ids = [ident, *ids]
     if ids:

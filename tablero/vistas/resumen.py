@@ -49,6 +49,8 @@ def render() -> None:
     ataques = int(resumen.get("ataques", 0))
     proporcion = (100.0 * ataques / total) if total else 0.0
     por_clase = resumen.get("por_clase") or {}
+    sin_familia = int(resumen.get("sin_familia", 0) or 0)
+    con_familia = int(resumen.get("con_familia", max(0, ataques - sin_familia)) or 0)
     familias = [c for c in CLASES if c != "normal" and int(por_clase.get(c, 0)) > 0]
     metricas = datos.metricas(api) or {}
     binario = metricas.get("binario_kddtest") or {}
@@ -61,7 +63,9 @@ def render() -> None:
         "Cada cifra viene de /history/resumen y /metrics, no de esta sesión.",
         [
             (f"{total:,}", "Predicciones", "historial persistido de la API"),
-            (f"{ataques:,}", "Ataques", "es_ataque = verdadero"),
+            (f"{ataques:,}", "Ataques",
+             (f"es_ataque = verdadero; {con_familia:,} con familia y "
+              f"{sin_familia:,} sin familia clasificada")),
             (f"{proporcion:.1f} %", "Tasa de ataque", "sobre el total registrado"),
             (f"{len(familias)}/4", "Familias detectadas", "de las cuatro de ataque"),
             (f"{float(macro_f1):.3f}" if macro_f1 is not None else "sin datos",
@@ -333,6 +337,8 @@ def _render_actividad(api: str) -> None:
     resumen = datos.resumen(api) or {}
     total = int(resumen.get("total", 0))
     por_clase = resumen.get("por_clase") or {}
+    sin_familia = int(resumen.get("sin_familia", 0) or 0)
+    ataques = int(resumen.get("ataques", 0))
     df = datos.historial_df(api, client.HISTORIAL_MAXIMO)
     if df.empty:
         estilos.vacio(
@@ -371,13 +377,24 @@ def _render_actividad(api: str) -> None:
         nivel, tono = "media", True
     else:
         nivel, tono = "baja", False
-    familia_top = (ataques_rec["clase"].value_counts().idxmax()
-                   if not ataques_rec.empty else "ninguna")
+    # La cabeza multiclase puede devolver "normal" en un ataque que el binario sí
+    # detectó. Elegir la moda sin filtrar hacía que "Familia dominante" dijera
+    # "Normal", que es una contradicción en la misma tarjeta.
+    con_familia_rec = ataques_rec[ataques_rec["clase"] != "normal"]
+    if con_familia_rec.empty:
+        familia_top = "sin clasificar"
+        nota_familia = ("ningún ataque reciente tiene familia asignada"
+                        if not ataques_rec.empty else "sin ataques en la ventana")
+    else:
+        familia_top = con_familia_rec["clase"].value_counts().idxmax()
+        sin_rec = len(ataques_rec) - len(con_familia_rec)
+        nota_familia = (f"{sin_rec} de {len(ataques_rec)} ataques recientes sin familia"
+                        if sin_rec else "la más frecuente entre los ataques recientes")
     ultimo = (ataques_rec["hora"].iloc[0] if not ataques_rec.empty else "sin ataques")
     estilos.kpis([
         ("Actividad hostil", nivel, f"{tasa:.0f} % de ataques en {n} registros", tono),
         ("Familia dominante", NOMBRE_CLASE.get(familia_top, familia_top).split(" (")[0],
-         "la más frecuente entre los ataques recientes"),
+         nota_familia),
         ("Último ataque", ultimo, "hora UTC del registro"),
         ("p(ataque) media", f"{recientes['probabilidad_ataque'].mean():.3f}",
          "promedio de las últimas predicciones"),
@@ -410,6 +427,17 @@ def _render_actividad(api: str) -> None:
             )
             estilos.fuente("R2L y U2R son las familias con menos registros y menos recall, y "
                            "el detalle está en Modelo y métricas.")
+        if sin_familia:
+            estilos.bloque(
+                "Por qué los ataques no cuadran con la suma de familias.",
+                f"{sin_familia:,} de los {ataques:,} ataques están marcados por la cabeza "
+                "binaria pero la cabeza multiclase no los reconoce como DoS, Probe, R2L ni "
+                "U2R: quedan con clase normal y no aparecen en la tabla de arriba. No es un "
+                "error de suma. Son ataques que no se parecen a ninguna familia vista en "
+                "entrenamiento, que es justo el caso de R2L y U2R. El historial guardado no "
+                "se reescribe: se cuenta aparte.",
+                tono="nota",
+            )
 
     # ------------------------------------------------------------------
     estilos.seccion("7", "Últimas predicciones", "lo que acaba de pasar")
