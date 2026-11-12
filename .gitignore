@@ -42,7 +42,3 @@ Thumbs.db
 dist/
 .streamlit/secrets.toml
 
-# CI workflow: excluido temporalmente hasta tener permiso 'workflow' en el token
-# de GitHub. Cuando el token lo tenga: borrar esta línea y commitear .github/.
-# El archivo .github/workflows/ci.yml ya está escrito y probado en local.
-.github/

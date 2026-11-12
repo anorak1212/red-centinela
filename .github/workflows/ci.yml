@@ -1,0 +1,81 @@
+name: CI
+
+# Este flujo está escrito y probado en local, pero NO está commiteado: el
+# token de GitHub del proyecto no tiene el permiso `workflow`, así que
+# .github/ sigue en .gitignore. Para activarlo hay que crear un token con ese
+# permiso, borrar la línea `.github/` del .gitignore y hacer commit.
+#
+# Qué corre:
+#   - ruff (reglas E, F, I, ISC, S: un error de estilo no pasa).
+#   - pytest con cobertura.
+#   - pip-audit como informe, no como bloqueo: una CVE sin parche disponible no
+#     debe impedir desplegar, pero sí quedar visible.
+#
+# El repositorio no incluye datasets ni artefactos (80 MB de .joblib): las
+# pruebas que dependen de ellos se omiten solas. Cobertura medida sin artefactos:
+# 69 %. Con artefactos, en local: 84 %. El umbral de CI es 65 para no fallar por
+# lo que no está versionado; el de pyproject sigue en 80.
+
+on:
+  push:
+    branches: [main, final]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check . --exclude .venv --output-format concise
+
+      - name: Pruebas y cobertura
+        run: |
+          coverage run -m pytest -q
+          coverage report --fail-under=65
+
+      - name: Guardar el informe de cobertura
+        if: always()
+        run: coverage xml -o coverage.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cobertura
+          path: coverage.xml
+          if-no-files-found: ignore
+
+  seguridad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar pip-audit
+        run: pip install pip-audit
+
+      - name: Auditar dependencias
+        run: pip-audit -r requirements.txt -r tablero/requirements.txt --desc on

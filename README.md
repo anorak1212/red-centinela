@@ -129,11 +129,14 @@ con límites de uso, ninguno con tarjeta.
 
 ## CI
 
-`.github/workflows/ci.yml` corre ruff, pytest con cobertura y pip-audit; hay un
-segundo flujo, `respaldo.yml`, que hace un `pg_dump` semanal cifrado del historial.
-Los dos están escritos pero no versionados: el token de GitHub del proyecto no
-tiene el permiso `workflow`, así que `.github/` sigue en `.gitignore`. Para
-activarlos hay que crear un token con ese permiso, borrar esa línea y hacer commit.
+`.github/workflows/ci.yml` corre ruff, pytest con cobertura (umbral 65, porque el
+repositorio no versiona dataset ni artefactos) y pip-audit como informe. Un
+segundo flujo, `respaldo.yml`, hace un `pg_dump` semanal de la tabla
+`predicciones` en Neon, cifrado con GPG y guardado 90 días como artefacto.
+
+Los dos flujos se activan al subir la rama. No se pudieron probar en GitHub
+mientras el token de la cuenta no tuvo el permiso `workflow`; la lógica sí está
+probada en local: `ruff check .` pasa y las 123 pruebas también.
 
 ## Convenciones
 

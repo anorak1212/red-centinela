@@ -1,0 +1,79 @@
+name: Respaldo de Neon
+
+# Igual que ci.yml: escrito y listo, sin commitear mientras .github/ siga en
+# .gitignore (el token no tiene permiso `workflow`).
+#
+# Qué hace: un pg_dump semanal del historial de Neon, cifrado con GPG simétrico,
+# guardado como artefacto de 90 días. Neon free no borra datos ni tiene
+# caducidad por falta de uso, pero un `DELETE` accidental o un esquema roto no
+# se recupera con una captura de pantalla. 90 días cubren de sobra la defensa.
+#
+# Secretos necesarios (Settings > Secrets and variables > Actions):
+#   NEON_DATABASE_URL  cadena de conexión de Neon (sslmode=require)
+#   RESPALDO_PASFHRASE frase de paso del cifrado
+#
+# Restaurar (en local, con postgresql-client instalado):
+#   gpg --batch --passphrase "$env:RESPALDO_PASFHRASE" -d respaldo.sql.gpg > respaldo.sql
+#   psql "$env:NEON_DATABASE_URL" -f respaldo.sql
+#
+# Costo: 0. Un dump de miles de filas tarda segundos dentro de los minutos
+# gratuitos de Actions.
+
+on:
+  schedule:
+    # Lunes 08:00 UTC. Antes de la defensa del 18/11 conviene lanzarlo a mano.
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  respaldar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Comprobar que hay cadena de conexión
+        run: |
+          if [ -z "${{ secrets.NEON_DATABASE_URL }}" ]; then
+            echo "Falta el secreto NEON_DATABASE_URL: no hay nada que respaldar."
+            exit 1
+          fi
+
+      - name: Instalar cliente de PostgreSQL
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client gnupg
+
+      - name: Volcar la tabla de predicciones
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          # Solo la tabla del proyecto, con datos. Nada de roles ni extensiones.
+          pg_dump "$DATABASE_URL" \
+            --table=predicciones \
+            --data-only \
+            --column-inserts \
+            --no-owner \
+            --no-privileges \
+            -f predicciones.sql
+          echo "Filas: $(grep -c '^INSERT' predicciones.sql || true)"
+          wc -c predicciones.sql
+
+      - name: Cifrar
+        env:
+          RESPALDO_PASFHRASE: ${{ secrets.RESPALDO_PASFHRASE }}
+        run: |
+          if [ -z "$RESPALDO_PASFHRASE" ]; then
+            echo "Falta RESPALDO_PASFHRASE: no se sube un respaldo sin cifrar."
+            exit 1
+          fi
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+              --passphrase "$RESPALDO_PASFHRASE" \
+              -o "respaldo_$(date -u +%Y%m%d).sql.gpg" predicciones.sql
+          rm -f predicciones.sql
+          ls -l respaldo_*.sql.gpg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-neon-${{ github.run_number }}
+          path: respaldo_*.sql.gpg
+          retention-days: 90
+          if-no-files-found: error

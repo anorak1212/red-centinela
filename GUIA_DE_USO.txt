@@ -160,7 +160,8 @@ ESTADO DE ENTREGABLES (corte 11/11/2026)
   M4 Tablero .............. OK
   M5 Alertas Telegram ..... CODIGO LISTO, falta token y chat id
   M6 Despliegue ........... PENDIENTE de cuentas (Render, Neon, Streamlit)
-  CI/CD ................... ESCRITO, bloqueado por permiso `workflow` del token
+  CI/CD ................... ESCRITO Y VERSIONADO, falta el permiso `workflow` del token
+                            para que GitHub lo ejecute
   Video y ensayo .......... PENDIENTES
 
 
