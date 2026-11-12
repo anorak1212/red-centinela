@@ -126,6 +126,29 @@ def sondear(ruta: str, timeout: int = 10) -> dict:
     return {"ruta": ruta, "codigo": r.status_code, "ms": ms, "error": None}
 
 
+def sondear_url(url: str, timeout: int = 10) -> dict:
+    """GET a una URL absoluta **sin seguir redirecciones**.
+
+    Los servicios gratuitos contestan 303 hacia su pantalla de acceso cuando la
+    app no es pública. Siguiendo la redirección se obtendría un 200 que diría
+    "accesible" cuando en realidad pide iniciar sesión, así que se mide el
+    primer código y el destino.
+    """
+    inicio = time.perf_counter()
+    try:
+        r = requests.get(url, timeout=timeout, allow_redirects=False)
+    except requests.RequestException as exc:
+        return {"url": url, "codigo": None, "ms": None,
+                "error": type(exc).__name__, "destino": None}
+    return {
+        "url": url,
+        "codigo": r.status_code,
+        "ms": (time.perf_counter() - inicio) * 1000,
+        "error": None,
+        "destino": r.headers.get("Location"),
+    }
+
+
 def metricas() -> dict:
     r = _get("/metrics")
     if r.status_code != 200:
