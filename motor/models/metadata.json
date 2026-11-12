@@ -1,5 +1,7 @@
 {
-  "version": "0.3.0",
+  "version": "1.0.0",
+  "generado": "2026-11-08T13:03:24-0600",
+  "semilla": 42,
   "n_features": 122,
   "feature_names": [
     "proto_tcp",
@@ -128,15 +130,39 @@
   "dataset_train": "NSL-KDD KDDTrain+",
   "dataset_test": "NSL-KDD KDDTest+",
   "filas_train": 125973,
-  "filas_test": 22544,
+  "modelo_produccion": "RandomForest",
   "modelos": [
-    "ensamble(rf+knn+svm)",
     "rf",
-    "svm",
-    "knn",
+    "rf_multi",
     "iforest"
   ],
-  "target": "y_binary",
+  "comparativa": [
+    {
+      "modelo": "linear_svc",
+      "filas_entrenamiento": 25000,
+      "macro_f1_binario": 0.9687,
+      "accuracy": 0.9689,
+      "segundos_entrenamiento": 1.7,
+      "nota": "solo comparativa; no se despliega"
+    },
+    {
+      "modelo": "knn7",
+      "filas_entrenamiento": 25000,
+      "macro_f1_binario": 0.9936,
+      "accuracy": 0.9936,
+      "segundos_entrenamiento": 4.0,
+      "nota": "solo comparativa; no se despliega"
+    }
+  ],
+  "clases": [
+    "normal",
+    "dos",
+    "probe",
+    "r2l",
+    "u2r"
+  ],
+  "target_binario": "y_binary",
+  "target_multiclase": "y_multi",
   "categorias": {
     "protocol_type": [
       "tcp",
@@ -229,10 +255,19 @@
       "OTH"
     ]
   },
-  "umbral_decision": 0.35,
-  "macro_f1_holdout": 0.9984,
+  "tiempos_entrenamiento_segundos": {
+    "rf_binario": 62.9,
+    "rf_multiclase": 58.9,
+    "iforest": 5.2
+  },
+  "umbral_decision": 0.41,
+  "macro_f1_binario_holdout": 0.9992,
+  "segundos_holdout_rf_binario": 62.2,
+  "macro_f1_multiclase_holdout": 0.9458,
+  "weighted_f1_multiclase_holdout": 0.9987,
+  "segundos_holdout_rf_multiclase": 55.5,
   "svm_proba_scale": [
-    -35.12137438267738,
-    217.4599933895739
+    -24.54228280528706,
+    247.73656247587644
   ]
 }

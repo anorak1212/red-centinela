@@ -1,21 +1,276 @@
 {
-  "ensamble": {
-    "umbral_decision": 0.35,
-    "accuracy_test": 0.7881,
-    "macro_f1_binario_test": 0.7877,
-    "auc_roc_test": 0.9652,
-    "recall_por_familia": {
-      "dos": 0.8408,
-      "probe": 0.8116,
-      "r2l": 0.0375,
-      "u2r": 0.2388
+  "version_motor": "1.0.0",
+  "generado": "2026-11-11T21:44:18-0600",
+  "modelo_produccion": {
+    "nombre": "RandomForest",
+    "cabezas": [
+      "binaria normal/ataque",
+      "multiclase de 5 clases"
+    ],
+    "umbral_decision": 0.41,
+    "clases": [
+      "normal",
+      "dos",
+      "probe",
+      "r2l",
+      "u2r"
+    ],
+    "verificacion_integridad": true
+  },
+  "binario_kddtest": {
+    "accuracy": 0.7998,
+    "macro_f1": 0.7995,
+    "weighted_f1": 0.7985,
+    "precision_ataque": 0.9689,
+    "recall_ataque": 0.6698,
+    "auc_roc": 0.9616,
+    "matriz_confusion": [
+      [
+        9435,
+        276
+      ],
+      [
+        4237,
+        8596
+      ]
+    ],
+    "filas": 22544,
+    "ataques_reales": 12833
+  },
+  "multiclase_kddtest": {
+    "accuracy": 0.7373,
+    "macro_f1": 0.4716,
+    "weighted_f1": 0.6894,
+    "por_clase": {
+      "normal": {
+        "precision": 0.6343,
+        "recall": 0.9738,
+        "f1": 0.7682,
+        "soporte": 9711
+      },
+      "dos": {
+        "precision": 0.9613,
+        "recall": 0.7664,
+        "f1": 0.8528,
+        "soporte": 7460
+      },
+      "probe": {
+        "precision": 0.8583,
+        "recall": 0.5931,
+        "f1": 0.7015,
+        "soporte": 2421
+      },
+      "r2l": {
+        "precision": 0.8333,
+        "recall": 0.0035,
+        "f1": 0.0069,
+        "soporte": 2885
+      },
+      "u2r": {
+        "precision": 0.3333,
+        "recall": 0.0149,
+        "f1": 0.0286,
+        "soporte": 67
+      }
+    },
+    "matriz_confusion": [
+      [
+        9457,
+        67,
+        186,
+        0,
+        1
+      ],
+      [
+        1695,
+        5717,
+        48,
+        0,
+        0
+      ],
+      [
+        822,
+        163,
+        1436,
+        0,
+        0
+      ],
+      [
+        2871,
+        0,
+        3,
+        10,
+        1
+      ],
+      [
+        64,
+        0,
+        0,
+        2,
+        1
+      ]
+    ],
+    "filas": 22544
+  },
+  "kddtest21": {
+    "filas": 11850,
+    "criterio": "dificultad < 21 (se excluye el nivel 21)",
+    "binario": {
+      "accuracy": 0.6192,
+      "macro_f1": 0.5808,
+      "weighted_f1": 0.6615,
+      "precision_ataque": 0.9519,
+      "recall_ataque": 0.5631,
+      "auc_roc": 0.815,
+      "matriz_confusion": [
+        [
+          1876,
+          276
+        ],
+        [
+          4237,
+          5461
+        ]
+      ],
+      "filas": 11850,
+      "ataques_reales": 9698
+    },
+    "multiclase": {
+      "accuracy": 0.5021,
+      "macro_f1": 0.3734,
+      "weighted_f1": 0.4841,
+      "por_clase": {
+        "normal": {
+          "precision": 0.2582,
+          "recall": 0.882,
+          "f1": 0.3995,
+          "soporte": 2152
+        },
+        "dos": {
+          "precision": 0.9194,
+          "recall": 0.6041,
+          "f1": 0.7291,
+          "soporte": 4344
+        },
+        "probe": {
+          "precision": 0.8688,
+          "recall": 0.5899,
+          "f1": 0.7027,
+          "soporte": 2402
+        },
+        "r2l": {
+          "precision": 0.8333,
+          "recall": 0.0035,
+          "f1": 0.0069,
+          "soporte": 2885
+        },
+        "u2r": {
+          "precision": 0.3333,
+          "recall": 0.0149,
+          "f1": 0.0286,
+          "soporte": 67
+        }
+      },
+      "matriz_confusion": [
+        [
+          1898,
+          67,
+          186,
+          0,
+          1
+        ],
+        [
+          1695,
+          2624,
+          25,
+          0,
+          0
+        ],
+        [
+          822,
+          163,
+          1417,
+          0,
+          0
+        ],
+        [
+          2871,
+          0,
+          3,
+          10,
+          1
+        ],
+        [
+          64,
+          0,
+          0,
+          2,
+          1
+        ]
+      ],
+      "filas": 11850
     }
   },
-  "macro_f1_holdout_train": 0.9984,
+  "recall_por_familia": {
+    "dos": {
+      "recall_deteccion": 0.8422,
+      "recall_clasificacion": 0.7664,
+      "registros": 7460
+    },
+    "probe": {
+      "recall_deteccion": 0.8414,
+      "recall_clasificacion": 0.5931,
+      "registros": 2421
+    },
+    "r2l": {
+      "recall_deteccion": 0.0915,
+      "recall_clasificacion": 0.0035,
+      "registros": 2885
+    },
+    "u2r": {
+      "recall_deteccion": 0.1791,
+      "recall_clasificacion": 0.0149,
+      "registros": 67
+    }
+  },
   "iforest": {
     "auc_roc": 0.9376,
-    "recall_ataques_top10": 0.9965,
-    "nota": "no supervisado; sin macro-F1 de clasificación"
+    "recall_ataques_top10_por_ciento": 0.9965,
+    "nota": "no supervisado, entrenado solo con tráfico normal; no decide la etiqueta, ordena rareza"
   },
-  "nota": "KDDTest+ contiene ataques no vistos en entrenamiento y es notoriamente mas dificil; el umbral PERF-003 (>=0.90) se cumple en el dominio de entrenamiento (holdout) y no en KDDTest+, donde los valores cercanos a 0.80 son el estado del arte reportado en la literatura."
+  "holdout_entrenamiento": {
+    "macro_f1_binario": 0.9992,
+    "macro_f1_multiclase": 0.9458,
+    "weighted_f1_multiclase": 0.9987,
+    "nota": "misma distribución del entrenamiento; NO es una prueba independiente y no debe citarse como cumplimiento de PERF-003"
+  },
+  "latencia": {
+    "ms_por_fila_sola": 253.53,
+    "ms_por_fila_en_lote_500": 0.316,
+    "repeticiones": 60,
+    "nota": "medido en la máquina de desarrollo; el despliegue puede diferir"
+  },
+  "tiempos_entrenamiento_segundos": {
+    "rf_binario": 62.9,
+    "rf_multiclase": 58.9,
+    "iforest": 5.2
+  },
+  "comparativa_modelos": [
+    {
+      "modelo": "linear_svc",
+      "filas_entrenamiento": 25000,
+      "macro_f1_binario": 0.9687,
+      "accuracy": 0.9689,
+      "segundos_entrenamiento": 1.7,
+      "nota": "solo comparativa; no se despliega"
+    },
+    {
+      "modelo": "knn7",
+      "filas_entrenamiento": 25000,
+      "macro_f1_binario": 0.9936,
+      "accuracy": 0.9936,
+      "segundos_entrenamiento": 4.0,
+      "nota": "solo comparativa; no se despliega"
+    }
+  ]
 }

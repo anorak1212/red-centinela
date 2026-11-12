@@ -1,0 +1,27 @@
+{
+  "algoritmo": "sha256",
+  "archivos": {
+    "iforest.joblib": {
+      "sha256": "d052b33ef04158e629dee7a2f7ebfb1ea7e4148f4c46b98b493e56ff15c4684b",
+      "bytes": 1589021
+    },
+    "preprocessor.joblib": {
+      "sha256": "2b0660df98faff0e5d536b5019cf687d45d5269fbe8dee6feb2eff3239f4f839",
+      "bytes": 2317
+    },
+    "rf.joblib": {
+      "sha256": "f08294a7391eebc653d0efb6dcaa5bbe4289164d910d88e77a862bab84a35f0c",
+      "bytes": 29335545
+    },
+    "rf_multi.joblib": {
+      "sha256": "6dd6be70e33d65e4ca78e6a82ced59563144448fd2c899d05e860a108fbb2f2f",
+      "bytes": 47842625
+    },
+    "metadata.json": {
+      "sha256": "699e0b1d47e580b96ff8b67ebc0df9f285f0adc7fa0c17c8170dd27a770db8e5",
+      "bytes": 5463
+    }
+  },
+  "metadata_sha256": "699e0b1d47e580b96ff8b67ebc0df9f285f0adc7fa0c17c8170dd27a770db8e5",
+  "version": "1.0.0"
+}

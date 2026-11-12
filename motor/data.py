@@ -12,8 +12,14 @@ MODEL_DIR = Path(__file__).resolve().parent / "models"
 
 LABEL = "label"
 TARGET = "y_binary"  # 1 = ataque, 0 = normal
+TARGET_MULTI = "y_multi"  # 0 normal, 1 dos, 2 probe, 3 r2l, 4 u2r
 
 CATEGORICAL = ["protocol_type", "service", "flag"]
+
+# Orden canónico de las cinco clases. No cambiar sin versionar los modelos:
+# el índice es lo que queda escrito dentro de cada artefacto .joblib.
+CLASSES = ["normal", "dos", "probe", "r2l", "u2r"]
+CLASS_TO_INDEX = {c: i for i, c in enumerate(CLASSES)}
 
 # Las 4 categorías de ataque del NSL-KDD. Las firmas de KDDTest+ que no
 # aparecen en KDDTrain+ (apache2, mailbomb, xterm, etc.) entran en su
@@ -32,6 +38,8 @@ FAMILY: dict[str, str] = {
     "multihop": "r2l", "warezmaster": "r2l", "warezclient": "r2l",
     "spy": "r2l", "snmpgetattack": "r2l", "snmpguess": "r2l",
     "xlock": "r2l", "xsnoop": "r2l", "httptunnel": "r2l",
+    # R2L presentes solo en KDDTest+ (explotación de named y de sendmail)
+    "named": "r2l", "sendmail": "r2l",
     # U2R
     "buffer_overflow": "u2r", "loadmodule": "u2r", "perl": "u2r",
     "rootkit": "u2r", "ps": "u2r", "sqlattack": "u2r", "xterm": "u2r",
@@ -70,10 +78,19 @@ def load_raw(name: str = "KDDTrain+.txt") -> pd.DataFrame:
     df = pd.read_csv(path, header=None, names=COLUMNS)
     df["family"] = df[LABEL].map(FAMILY).fillna("unknown")
     df[TARGET] = (df["family"] != "normal").astype(int)
-    if df.shape[1] != len(COLUMNS) + 2:
+
+    sin_mapear = sorted(df.loc[df["family"] == "unknown", LABEL].unique().tolist())
+    if sin_mapear:
+        raise ValueError(
+            f"Etiquetas sin familia asignada en {name}: {sin_mapear}. "
+            "Agrégalas al diccionario FAMILY de motor/data.py."
+        )
+    df[TARGET_MULTI] = df["family"].map(CLASS_TO_INDEX).astype(int)
+
+    if df.shape[1] != len(COLUMNS) + 3:
         raise ValueError(
             f"Estructura inesperada en {name}: {df.shape[1]} columnas "
-            f"(se esperaba {len(COLUMNS) + 2})."
+            f"(se esperaba {len(COLUMNS) + 3})."
         )
     return df
 

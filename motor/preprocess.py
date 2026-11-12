@@ -38,7 +38,10 @@ class Preprocessor:
         partes: list[np.ndarray] = []
         for c in CATEGORICAL:
             cats = self.cat_categories_[c]
-            codes = pd.Categorical(df[c].astype(str), categories=cats).codes
+            mapa = {valor: i for i, valor in enumerate(cats)}
+            codes = (
+                df[c].astype(str).map(mapa).fillna(-1).to_numpy(dtype=int)
+            )
             mat = np.zeros((n, len(cats)), dtype=np.float32)
             valid = codes >= 0
             mat[np.arange(n)[valid], codes[valid]] = 1.0
