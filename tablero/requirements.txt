@@ -1,0 +1,5 @@
+# Dependencias mínimas del tablero Streamlit (M4).
+# El tablero no carga modelos ni toca la base de datos: consume la API por HTTP.
+streamlit==1.64.0
+requests==2.34.2
+pandas==3.0.6
