@@ -13,7 +13,7 @@ ENDPOINTS = [
     ("GET", "/metrics", "Cifras del modelo tomadas de metrics.json."),
     ("POST", "/predict", "Una conexión, 41 características, devuelve clase y probabilidad."),
     ("POST", "/predict/batch", "Hasta 500 conexiones por petición."),
-    ("GET", "/history", "Predicciones guardadas. ?limit entre 1 y 500."),
+    ("GET", "/history", "Predicciones guardadas. ?limit entre 1 y 500 (el tablero no pide más)."),
     ("GET", "/history/resumen", "Conteos agregados que alimentan el resumen."),
     ("GET", "/alertas/estado", "Si el bot está configurado y cuántos mensajes salieron."),
     ("POST", "/alertas/prueba", "Envía un mensaje real al chat configurado."),
@@ -25,6 +25,8 @@ VARIABLES = [
     ("REDCENTINELA_TELEGRAM_TOKEN", "Token del bot. Solo lo lee la API, nunca el tablero."),
     ("REDCENTINELA_TELEGRAM_CHAT_ID", "Chat destino de las alertas."),
     ("REDCENTINELA_API", "URL de la API que consume este tablero."),
+    ("REDCENTINELA_TABLERO_USUARIOS", ("Usuarios del tablero: usuario:rol:hash, separados por "
+                                       "comas. Roles admin y lector. Sin ella, acceso abierto.")),
     ("REDCENTINELA_RATE_LIMIT", "Peticiones por ventana y por IP en /predict (por omisión 120)."),
 ]
 
@@ -37,7 +39,8 @@ def render() -> None:
     )
 
     tab_uso, tab_api, tab_limites = st.tabs(
-        ["Cómo se ejecuta", "Contrato de la API", "Límites y decisiones"]
+        [":material/terminal: Cómo se ejecuta", ":material/api: Contrato de la API",
+         ":material/rule: Límites y decisiones"]
     )
 
     with tab_uso:
@@ -79,15 +82,11 @@ def render() -> None:
             })
 
     with tab_api:
-        st.dataframe(
-            pd.DataFrame(ENDPOINTS, columns=["método", "ruta", "para qué sirve"]),
-            hide_index=True,
-        )
+        estilos.tabla([{"Método": m, "Ruta": r, "Para qué sirve": d} for m, r, d in ENDPOINTS],
+                      ["Método", "Ruta", "Para qué sirve"], fuertes=("Ruta",))
         st.markdown("**Variables de entorno**")
-        st.dataframe(
-            pd.DataFrame(VARIABLES, columns=["variable", "efecto"]),
-            hide_index=True,
-        )
+        estilos.tabla([{"Variable": v, "Efecto": e} for v, e in VARIABLES],
+                      ["Variable", "Efecto"], fuertes=("Variable",))
         estilos.bloque(
             "Los nombres de los endpoints no son negociables.",
             "/predict, /predict/batch y /history están fijados por el diseño del "
@@ -97,8 +96,9 @@ def render() -> None:
 
     with tab_limites:
         st.markdown("**Qué significa cada cifra**")
-        st.dataframe(
-            pd.DataFrame([
+        filtro = st.text_input("Buscar en el glosario", placeholder="p. ej. recall, umbral",
+                               key="glosario_buscar")
+        glosario = pd.DataFrame([
                 (
                     "Macro-F1",
                     (
@@ -134,21 +134,49 @@ def render() -> None:
                         "entrenamiento. Es la prueba honesta."
                     ),
                 ),
-            ], columns=["término", "definición"]),
-            hide_index=True,
-        )
+                ("AUC ROC", ("Capacidad de separar normal de ataque sin depender del umbral. "
+                 "1.0 es separación perfecta y 0.5, azar.")),
+                ("KDDTest-21", ("Subconjunto de KDDTest+ sin las filas que todos los modelos "
+                 "de referencia aciertan. Si las cifras no bajan aquí, hay fuga de datos.")),
+                ("Detección contra clasificación", ("Detección: el sistema dijo 'ataque'. "
+                 "Clasificación: además acertó la familia. Se reportan por separado.")),
+                ("Isolation Forest", ("Modelo no supervisado entrenado solo con tráfico normal. "
+                 "Ordena rareza, pero no decide la etiqueta.")),
+                ("Modo degradado", ("La API responde pero no tiene los .joblib cargados: lee "
+                 "historial y métricas, y /predict devuelve 503.")),
+            ], columns=["término", "definición"])
+        if filtro.strip():
+            patron = filtro.strip().lower()
+            glosario = glosario[
+                glosario["término"].str.lower().str.contains(patron, regex=False)
+                | glosario["definición"].str.lower().str.contains(patron, regex=False)
+            ]
+        if glosario.empty:
+            st.info("Ningún término coincide con la búsqueda.")
+        else:
+            estilos.tabla(
+                [{"Término": t, "Definición": d} for t, d in glosario.itertuples(index=False)],
+                ["Término", "Definición"], fuertes=("Término",))
 
         estilos.bloque(
             "Lo que el sistema no hace.",
             "No inspecciona paquetes en tiempo real ni reemplaza un IDS: clasifica "
             "registros de conexión con 41 características. No detecta ataques de "
-            "día cero por nombre; el Isolation Forest solo ordena rareza. Y las "
+            "día cero por nombre, porque el Isolation Forest solo ordena rareza. Y las "
             "familias r2l y u2r se detectan mal, con los números a la vista en "
             "Modelo y métricas.",
             tono="aviso",
         )
         estilos.bloque(
-            "Sobre el verde del título.",
-            "Ningún control de este tablero es decorativo. Si un botón no puede "
-            "hacer nada, no se dibuja: se explica por qué.",
+            "Ningún control es decorativo.",
+            "Si un botón no puede hacer nada (por ejemplo, Predecir con la API sin "
+            "modelos), se deshabilita y se explica por qué.",
+        )
+        st.markdown("**Código de color**")
+        st.markdown(
+            estilos.pill("azul para marca y acciones", "marca")
+            + estilos.pill("verde azulado para normal o cumplido", "ok")
+            + estilos.pill("ámbar para umbral o atención", "medio")
+            + estilos.pill("rojo para ataque o incumplido", "mal"),
+            unsafe_allow_html=True,
         )

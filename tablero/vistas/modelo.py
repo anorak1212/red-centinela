@@ -61,7 +61,7 @@ def render() -> None:
         ],
     )
 
-    _seccion_binaria(binario)
+    _seccion_binaria(binario, dificil_bin)
     _seccion_multiclase(multi)
     _seccion_familias(familias, multi)
     _seccion_dificil(binario, dificil, dificil_bin)
@@ -71,9 +71,19 @@ def render() -> None:
 
 
 # --------------------------------------------------------------------------
-def _seccion_binaria(binario: dict) -> None:
-    estilos.seccion("1", "Cabeza binaria: normal contra ataque",
-                    f"{int(binario.get('filas', 0)):,} filas de KDDTest+")
+def _seccion_binaria(binario_test: dict, dificil_bin: dict) -> None:
+    conjuntos = {"KDDTest+": binario_test}
+    if dificil_bin.get("matriz_confusion"):
+        conjuntos["KDDTest-21"] = dificil_bin
+    cab_izq, cab_der = st.columns([3, 2], vertical_alignment="bottom")
+    nombre = cab_der.segmented_control(
+        "Conjunto evaluado", list(conjuntos), default="KDDTest+", key="conjunto_binario",
+        help="Las mismas cifras sobre el conjunto completo o sobre su subconjunto difícil.",
+    ) or "KDDTest+"
+    binario = conjuntos[nombre]
+    with cab_izq:
+        estilos.seccion("1", "Cabeza binaria: normal contra ataque",
+                        f"{int(binario.get('filas', 0)):,} filas de {nombre}")
     estilos.kpis([
         ("Macro-F1", f"{float(binario.get('macro_f1', 0)):.4f}", "media de las dos clases", True),
         ("Exactitud", f"{float(binario.get('accuracy', 0)):.4f}", "aciertos totales"),
@@ -108,7 +118,7 @@ def _seccion_binaria(binario: dict) -> None:
                  "Lectura": "ataques que pasaron sin alerta: el error caro"},
                 {"Métrica": "Verdaderos positivos", "Filas": f"{vp:,}",
                  "Lectura": "ataques detectados y avisados"},
-                {"Métrica": "Precisión / recall", "Filas": f"{precision:.4f} / {recall:.4f}",
+                {"Métrica": "Precisión y recall", "Filas": f"{precision:.4f} y {recall:.4f}",
                  "Lectura": "precisión alta, recall moderado: el modelo calla antes que gritar"},
             ],
             ["Métrica", "Filas", "Lectura"],
@@ -186,7 +196,7 @@ def _seccion_familias(familias: dict, multi: dict) -> None:
                         width="stretch")
         estilos.fuente(
             "Detección: el sistema dijo 'ataque', sin importar la familia. "
-            "Clasificación: además acertó la familia. Al negocio le sirve la primera; "
+            "Clasificación: además acertó la familia. Al negocio le sirve la primera, y "
             "la segunda es la que un sinodal va a preguntar."
         )
     with derecha:
@@ -204,7 +214,7 @@ def _seccion_familias(familias: dict, multi: dict) -> None:
             "Por qué R2L falla.",
             "En KDDTest+, R2L incluye familias de ataque que no existen en "
             "KDDTrain+: el modelo no las puede nombrar porque nunca las vio. "
-            "El recall de detección (0.0915) es lo que el sistema hace hoy; "
+            "El recall de detección (0.0915) es lo que el sistema hace hoy, mientras que "
             "el de clasificación (0.0035) mide la etiqueta, no la alerta.",
         )
 
@@ -253,7 +263,7 @@ def _seccion_comparativa(comparativa: list[dict]) -> None:
             "Filas": f"{int(modelo.get('filas_entrenamiento', 0)):,}",
             "Macro-F1": "ver sección 1" if f1 is None else f"{float(f1):.4f}",
             "Entrenamiento (s)": f"{float(modelo.get('segundos_entrenamiento', 0)):.1f}",
-            "Nota": modelo.get("nota", ""),
+            "Nota": estilos.organico(modelo.get("nota", "")),
         })
     izquierda, derecha = st.columns([3, 2], gap="large")
     with izquierda:
@@ -263,7 +273,7 @@ def _seccion_comparativa(comparativa: list[dict]) -> None:
         grafica = pd.DataFrame([
             {"modelo": m["modelo"], "macro_f1_binario": float(m.get("macro_f1_binario") or 0),
              "filas_entrenamiento": int(m.get("filas_entrenamiento", 0)),
-             "nota": m.get("nota", "")}
+             "nota": estilos.organico(m.get("nota", ""))}
             for m in otros
         ])
         if not grafica.empty:
@@ -308,7 +318,7 @@ def _seccion_honestidad(holdout: dict, iforest: dict) -> None:
              f"{100 * float(iforest.get('recall_ataques_top10_por_ciento', 0)):.2f} %",
              "de los ataques caen en ese décimo"),
         ])
-        st.caption(iforest.get("nota", ""))
+        st.caption(estilos.organico(iforest.get("nota", "")))
 
 
 def _seccion_costo(latencia: dict, tiempos: dict, produccion: dict) -> None:
@@ -326,5 +336,5 @@ def _seccion_costo(latencia: dict, tiempos: dict, produccion: dict) -> None:
         f"Modelo en producción: {produccion.get('nombre', '?')} con las cabezas "
         f"{', '.join(produccion.get('cabezas') or [])}, umbral "
         f"{produccion.get('umbral_decision', '?')}. "
-        + latencia.get("nota", "")
+        + estilos.organico(latencia.get("nota", ""))
     )

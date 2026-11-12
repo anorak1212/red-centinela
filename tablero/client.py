@@ -20,6 +20,8 @@ import requests
 API_URL = os.environ.get("REDCENTINELA_API", "http://127.0.0.1:8000")
 TIMEOUT = 20
 LOTE_MAXIMO = 500
+# /history acepta limit entre 1 y 500 (api/main.py). Pedir más devuelve 422.
+HISTORIAL_MAXIMO = 500
 
 # Columnas esperadas en los archivos CSV de carga (41 características del NSL-KDD).
 COLUMNAS = [
@@ -92,19 +94,36 @@ def salud(reverificar: bool = False, timeout: int = TIMEOUT) -> dict:
 
 
 def esperar_api(segundos: int = 90) -> tuple[bool, float]:
-    """Sondea /health hasta que la API despierte. Devuelve (ok, segundos).
+    """Sondea /health hasta que la API responda. Devuelve (ok, segundos).
 
+    "Responder" basta: una API en modo degradado (sin modelos) está despierta
+    aunque no pueda predecir; el estado exacto lo muestra la barra lateral.
     Los planes gratuitos duermen el servicio: en la demo hay que despertarlo
     antes de proyectar, no durante.
     """
     inicio = time.perf_counter()
     while time.perf_counter() - inicio < segundos:
         try:
-            if salud(timeout=15).get("status") == "ok":
-                return True, time.perf_counter() - inicio
+            salud(timeout=15)
+            return True, time.perf_counter() - inicio
         except ApiError:
-            time.sleep(5)
+            time.sleep(min(5, max(0.0, segundos - (time.perf_counter() - inicio))))
     return False, time.perf_counter() - inicio
+
+
+def sondear(ruta: str, timeout: int = 10) -> dict:
+    """GET real a un endpoint: código HTTP y milisegundos medidos.
+
+    Solo se usa con endpoints de lectura; los POST escriben en el historial o
+    envían mensajes y no se disparan para "comprobar".
+    """
+    inicio = time.perf_counter()
+    try:
+        r = requests.get(_url(ruta), timeout=timeout)
+    except requests.RequestException as exc:
+        return {"ruta": ruta, "codigo": None, "ms": None, "error": type(exc).__name__}
+    ms = (time.perf_counter() - inicio) * 1000
+    return {"ruta": ruta, "codigo": r.status_code, "ms": ms, "error": None}
 
 
 def metricas() -> dict:
@@ -122,7 +141,8 @@ def resumen_historial() -> dict:
 
 
 def historial(limit: int = 200) -> list[dict]:
-    r = _get(f"/history?limit={int(limit)}")
+    limit = max(1, min(int(limit), HISTORIAL_MAXIMO))
+    r = _get(f"/history?limit={limit}")
     if r.status_code != 200:
         raise ApiError(f"/history respondió {r.status_code}.")
     return r.json()["predicciones"]
@@ -267,3 +287,10 @@ def ejemplos_etiquetados(ruta: str | Path) -> dict[str, dict]:
                 limpia[col] = valor.lower() if col in CATEGORICAS else float(valor)
             elegidos[familia] = limpia
     return elegidos
+
+
+def plantilla_csv() -> str:
+    """Encabezado de las 41 columnas más una fila de ejemplo neutra."""
+    ejemplo = ["tcp" if c == "protocol_type" else "http" if c == "service"
+               else "sf" if c == "flag" else "0" for c in COLUMNAS]
+    return ",".join(COLUMNAS) + "\n" + ",".join(ejemplo) + "\n"

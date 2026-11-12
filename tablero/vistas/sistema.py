@@ -7,8 +7,10 @@ proyecto se puso, con la cifra medida al lado y el veredicto sin adornos.
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
+from tablero import client
 from tablero.ui import datos, estilos
 
 ENDPOINTS = [
@@ -46,17 +48,29 @@ def render() -> None:
             tono="aviso",
         )
     else:
+        verificacion = st.session_state.get("verificacion_endpoints")
+        if verificacion and verificacion.get("api") == api:
+            ok_get = sum(1 for r in verificacion["filas"] if r["codigo"] == 200)
+            cifra_endpoints = (f"{ok_get}/{len(verificacion['filas'])}",
+                               "Endpoints GET", "200 en la última verificación")
+        else:
+            cifra_endpoints = ("8", "Endpoints", "declarados, verifícalos en la sección 3")
+        disponibles = estado.get("modelos_disponibles", True)
+        operando = 4 if disponibles else 3
         estilos.banda(
             "Sistema en operación",
             f"Servicio {estado.get('servicio', 'red-centinela')} versión "
             f"{estado.get('version', '?')}, modelos "
             f"{', '.join(estado.get('modelo') or []) or 'sin cargar'}.",
             [
-                ("4/6", "Módulos operando", "M1 a M4; M5 y M6 parciales"),
-                ("8", "Endpoints", "todos verificados en este entorno"),
+                (f"{operando}/6", "Módulos operando",
+                 "M1 a M4, con M5 y M6 parciales" if disponibles
+                 else "M2 sin artefactos en este entorno"),
+                cifra_endpoints,
                 ("íntegros" if estado.get("integridad_artefactos") else "no verificados",
                  "Artefactos", "SHA-256 contra el manifiesto"),
-                (str(estado.get("umbral_decision", "?")), "Umbral", "calibrado en holdout interno"),
+                (str(estado.get("umbral_decision") or "sin datos"), "Umbral",
+                 "calibrado en holdout interno"),
                 (f"{float(macro_f1):.4f}" if macro_f1 is not None else "sin datos",
                  "Macro-F1", "KDDTest+"),
             ],
@@ -68,7 +82,10 @@ def render() -> None:
          "Repositorio Git, cuaderno de Colab y análisis del NSL-KDD. Operando.", "ok"),
         ("M2", "Motor de detección",
          ("Random Forest binario y multiclase más Isolation Forest, con manifiesto SHA-256. "
-          "Operando; PERF-003 no cumplido."), "medio"),
+          + ("Operando, aunque PERF-003 no se cumple."
+             if (estado or {}).get("modelos_disponibles", True)
+             else "Artefactos .joblib ausentes en este entorno: la API no predice.")),
+         "medio" if (estado or {}).get("modelos_disponibles", True) else "mal"),
         ("M3", "API REST",
          (f"FastAPI con ocho endpoints y almacén {((estado or {}).get('almacen') or {}).get('motor', 'SQLite')}. "
           "Operando en local."), "ok"),
@@ -116,16 +133,60 @@ def render() -> None:
     )
 
     estilos.seccion("3", "Superficie de la API", "ocho endpoints, contrato fijo")
-    estilos.tabla(
-        [{"Método": m, "Ruta": r, "Para qué sirve": d} for m, r, d in ENDPOINTS],
-        ["Método", "Ruta", "Para qué sirve"], fuertes=("Ruta",),
-    )
-    if estado is not None:
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        verificacion = st.session_state.get("verificacion_endpoints")
+        medidos = {}
+        if verificacion and verificacion.get("api") == api:
+            medidos = {r["ruta"]: r for r in verificacion["filas"]}
+        filas = []
+        for metodo, ruta, desc in ENDPOINTS:
+            r = medidos.get(ruta)
+            if metodo == "POST":
+                resultado = "no se sondea (escribe)"
+            elif r is None:
+                resultado = "sin verificar"
+            elif r["codigo"] is None:
+                resultado = f"sin respuesta ({r['error']})"
+            else:
+                resultado = f"{r['codigo']} en {r['ms']:.0f} ms"
+            filas.append({"Método": metodo, "Ruta": ruta, "Para qué sirve": desc,
+                          "Verificación": resultado})
+        estilos.tabla(filas, ["Método", "Ruta", "Para qué sirve", "Verificación"],
+                      fuertes=("Ruta",))
+    with derecha:
+        st.markdown("**Verificación en vivo**")
         st.caption(
-            f"Comprobado ahora contra {api}: versión {estado.get('version')}, "
-            f"{len(estado.get('modelo') or [])} modelos cargados, almacén "
-            f"{((estado.get('almacen') or {}).get('motor'))}."
+            "Hace un GET real a cada endpoint de lectura y mide el tiempo de respuesta. "
+            "Los POST no se disparan: /predict escribiría en el historial y "
+            "/alertas/prueba enviaría un mensaje."
         )
+        if st.button("Verificar endpoints ahora", type="primary", key="btn_verificar_endpoints",
+                     icon=":material/network_check:", disabled=estado is None):
+            with st.spinner("Sondeando endpoints..."):
+                resultados = [client.sondear(ruta) for metodo, ruta, _ in ENDPOINTS
+                              if metodo == "GET"]
+            st.session_state["verificacion_endpoints"] = {
+                "api": api, "filas": resultados,
+                "momento": pd.Timestamp.now(tz="UTC").strftime("%H:%M:%S UTC"),
+            }
+            st.rerun()
+        verificacion = st.session_state.get("verificacion_endpoints")
+        if verificacion and verificacion.get("api") == api:
+            ok_get = sum(1 for r in verificacion["filas"] if r["codigo"] == 200)
+            tiempos = [r["ms"] for r in verificacion["filas"] if r["ms"] is not None]
+            estilos.kpis([
+                ("Respondieron 200", f"{ok_get}/{len(verificacion['filas'])}",
+                 f"verificado a las {verificacion['momento']}", ok_get < len(verificacion["filas"])),
+                ("Tiempo máximo", f"{max(tiempos):.0f} ms" if tiempos else "sin datos",
+                 "el GET más lento"),
+            ])
+            no_ok = [r for r in verificacion["filas"] if r["codigo"] != 200]
+            for r in no_ok:
+                motivo = r["error"] or f"HTTP {r['codigo']}"
+                if r["ruta"] == "/metrics" and r["codigo"] == 503:
+                    motivo += " (falta metrics.json)"
+                st.warning(f"{r['ruta']}: {motivo}")
 
     estilos.seccion("4", "Lo que falta para la defensa", "dicho antes de que lo pregunten")
     estilos.kpis([

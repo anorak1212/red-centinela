@@ -11,7 +11,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from tablero.ui import datos, estilos, graficas
+from tablero import client
+from tablero.ui import datos, estilos, graficas, preferencias
 
 CLASES = ["normal", "dos", "probe", "r2l", "u2r"]
 
@@ -21,7 +22,7 @@ def render() -> None:
     estilos.encabezado(
         "Historial de predicciones",
         "Todo lo que la API ha analizado y guardado. El origen distingue una "
-        "consulta individual de una carga por lote; la columna Alerta dice si "
+        "consulta individual de una carga por lote, y la columna Alerta dice si "
         "Telegram confirmó el mensaje.",
     )
 
@@ -31,17 +32,32 @@ def render() -> None:
                        tono="aviso")
         return
 
-    controles = st.columns([1, 1, 1.4, 1.2], gap="medium")
-    limite = controles[0].selectbox("Registros leídos", [100, 250, 500, 1000], index=1)
-    origen = controles[1].selectbox("Origen", ["todos", "api", "api-lote"])
-    clases = controles[2].multiselect("Clases", CLASES, default=[],
-                                     placeholder="Todas las clases")
-    if controles[3].button("Actualizar", key="btn_hist_refrescar"):
-        datos.invalidar()
+    with st.container(border=True):
+        controles = st.columns([1, 1, 1.6, 0.9], gap="medium", vertical_alignment="bottom")
+        # La API acepta como máximo 500 registros por consulta (/history?limit).
+        opciones = [100, 250, client.HISTORIAL_MAXIMO]
+        por_omision = preferencias.obtener("limite_historial")
+        limite = controles[0].selectbox(
+            "Registros leídos", opciones,
+            index=opciones.index(por_omision) if por_omision in opciones else 1,
+            help=f"La API devuelve como máximo {client.HISTORIAL_MAXIMO} por consulta.")
+        origen = controles[1].selectbox("Origen", ["todos", "api", "api-lote"])
+        clases = controles[2].multiselect("Clases", CLASES, default=[],
+                                         placeholder="Todas las clases")
+        if controles[3].button("Actualizar", key="btn_hist_refrescar",
+                               icon=":material/refresh:", width="stretch"):
+            datos.invalidar()
+        filtros = st.columns([1.6, 1, 1], gap="medium", vertical_alignment="bottom")
+        rango = filtros[0].slider("p(ataque) entre", 0.0, 1.0, (0.0, 1.0), step=0.01)
+        buscar = filtros[1].text_input("Buscar ID", placeholder="p. ej. 42")
+        solo_alerta = filtros[2].toggle("Solo con alerta enviada")
 
     completo = datos.historial_df(api, limite)
     if completo.empty:
-        st.info("El historial está vacío. Analiza una conexión para empezar.")
+        estilos.bloque(
+            "El historial está vacío.",
+            "Analiza una conexión o sube un CSV en <strong>Analizar</strong> para empezar.",
+        )
         return
 
     vista = completo.copy()
@@ -49,6 +65,14 @@ def render() -> None:
         vista = vista[vista["origen"] == origen]
     if clases:
         vista = vista[vista["clase"].isin(clases)]
+    vista = vista[vista["probabilidad_ataque"].between(rango[0], rango[1])]
+    if solo_alerta:
+        vista = vista[vista["alerta_enviada"].astype(bool)]
+    if buscar.strip():
+        if not buscar.strip().isdigit():
+            st.warning("El ID debe ser un número entero.")
+            return
+        vista = vista[vista["id"] == int(buscar.strip())]
     if vista.empty:
         st.info("Ningún registro coincide con esos filtros.")
         return
@@ -57,7 +81,7 @@ def render() -> None:
     ataques = int(vista["es_ataque"].sum())
     confirmadas = int(vista["alerta_enviada"].sum())
     estilos.banda(
-        "Historial de predicciones",
+        "Historial filtrado",
         f"{len(vista):,} registros tras el filtro, de {len(completo):,} leídos "
         f"({min(limite, len(completo)):,} máximo por consulta).",
         [
@@ -73,7 +97,7 @@ def render() -> None:
                     f"umbral de decisión {umbral}")
     st.altair_chart(graficas.serie_probabilidad(vista, umbral), width="stretch")
     estilos.fuente(
-        "Cada punto es una predicción en orden de llegada; los rojos superaron el umbral. "
+        "Cada punto es una predicción en orden de llegada y los rojos superaron el umbral. "
         "Una línea que se pega al umbral significa un modelo indeciso en ese tramo."
     )
 
@@ -97,15 +121,18 @@ def render() -> None:
         )
         st.altair_chart(
             graficas.barras_horizontales(conteo_origen, "origen", "registros",
-                                          "Predicciones", color=graficas.VERDE_CLARO),
+                                          "Predicciones", color="claro"),
             width="stretch",
         )
         estilos.fuente(
-            "api = consulta individual; api-lote = carga de CSV. "
+            "api es una consulta individual y api-lote, una carga de CSV. "
             "Si todo viene de api-lote, la demo no ha ejercitado el camino de una sola fila."
         )
 
-    estilos.seccion("3", "Registros", f"{len(vista):,} filas")
+    estilos.seccion("3", "Simulador de umbral", "qué pasaría con otro punto de corte")
+    _simulador(vista, umbral)
+
+    estilos.seccion("4", "Registros", f"{len(vista):,} filas")
     estilos.tabla(
         [{
             "ID": int(f.id),
@@ -128,10 +155,53 @@ def render() -> None:
         fila = vista.loc[vista["id"] == registro].iloc[0]
         st.json(fila.get("features") or {}, expanded=False)
 
-    st.download_button(
-        "Descargar la vista filtrada (CSV, sin características)",
-        vista.drop(columns=["features", "momento", "etiqueta"], errors="ignore")
-        .to_csv(index=False).encode("utf-8"),
+    exportable = vista.drop(columns=["features", "momento", "etiqueta"], errors="ignore")
+    d1, d2, _ = st.columns([1.3, 1.3, 2])
+    d1.download_button(
+        "Descargar CSV (sin características)",
+        exportable.to_csv(index=False).encode("utf-8"),
         file_name="historial_red_centinela.csv",
-        mime="text/csv",
+        mime="text/csv", icon=":material/download:", width="stretch",
+    )
+    d2.download_button(
+        "Descargar JSON (con características)",
+        vista.drop(columns=["momento", "etiqueta"], errors="ignore")
+        .to_json(orient="records", force_ascii=False, indent=2).encode("utf-8"),
+        file_name="historial_red_centinela.json",
+        mime="application/json", icon=":material/data_object:", width="stretch",
+    )
+
+
+def _simulador(vista: pd.DataFrame, umbral) -> None:
+    """Recuenta el historial con otro umbral, sin tocar la API.
+
+    Sirve para responder en la defensa "¿y si bajan el umbral?": cuántas
+    predicciones cambiarían de decisión. El umbral real del servicio sigue
+    siendo el calibrado; esto es un cálculo local sobre p(ataque) ya guardada.
+    """
+    real = float(umbral) if umbral is not None else 0.5
+    izquierda, derecha = st.columns([2, 3], gap="large")
+    with izquierda:
+        simulado = st.slider("Umbral simulado", 0.05, 0.95, min(0.95, max(0.05, real)), step=0.01,
+                             key="umbral_simulado")
+        p = vista["probabilidad_ataque"]
+        actuales = int(vista["es_ataque"].sum())
+        nuevos = int((p >= simulado).sum())
+        suben = int(((p >= simulado) & ~vista["es_ataque"].astype(bool)).sum())
+        bajan = int(((p < simulado) & vista["es_ataque"].astype(bool)).sum())
+        estilos.kpis([
+            ("Ataques con el umbral real", f"{actuales:,}", f"umbral {real:.2f}"),
+            ("Ataques con el simulado", f"{nuevos:,}", f"umbral {simulado:.2f}",
+             nuevos > actuales),
+            ("Pasarían a ataque", f"{suben:,}", "hoy son normales"),
+            ("Pasarían a normal", f"{bajan:,}", "hoy son ataques"),
+        ])
+    with derecha:
+        st.altair_chart(graficas.histograma_probabilidad(vista, umbral, simulado),
+                        width="stretch")
+    estilos.bloque(
+        "Simulación local.",
+        "No cambia el umbral de la API ni el historial: recuenta las p(ataque) ya "
+        "guardadas. Sin etiquetas reales no dice si el cambio acierta más, solo cuántas "
+        "decisiones se moverían. El umbral oficial se calibró sobre el holdout interno.",
     )
