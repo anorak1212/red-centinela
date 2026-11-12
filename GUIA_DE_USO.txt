@@ -54,6 +54,12 @@ ARRANQUE PASO A PASO (una sola vez: pasos 1 al 3)
        ruff check .
        python -m pytest -q
 
+  NOTA (maquina DTIC1, 08/10/2026): el .venv que venia en el ZIP apunta
+  a otro equipo y no arranca aqui. Se creo .venv_local con Python 3.13:
+       python -m venv .venv_local
+       .venv_local\Scripts\python.exe -m pip install -r requirements.txt
+  Usar .venv_local\Scripts\python.exe en todos los comandos de abajo.
+
 
 USO DIARIO (demos)
 ------------------------------------------------------------------------

@@ -127,7 +127,17 @@ def _sistema() -> dict:
 
 
 def _disponible() -> bool:
-    return (MODEL_DIR / "metadata.json").exists()
+    """¿Están en disco los artefactos que `cargar_modelos` necesita?
+
+    Comprobar solo `metadata.json` daba falsos positivos: con el metadato
+    presente y los .joblib borrados, /predict reventaba en la primera consulta.
+    La lista es la del modelo de producción (dos cabezas de Random Forest más
+    Isolation Forest). Ni svm ni knn se cargan: viven en `anteriores/` y solo
+    sirven para la comparativa del informe.
+    """
+    requeridos = ("metadata.json", "rf.joblib", "rf_multi.joblib",
+                  "iforest.joblib", "preprocessor.joblib")
+    return all((MODEL_DIR / nombre).exists() for nombre in requeridos)
 
 
 @lru_cache(maxsize=1)

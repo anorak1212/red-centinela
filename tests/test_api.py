@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import pytest
-from api.main import app
+from api.main import _disponible, app
 from fastapi.testclient import TestClient
-from motor.data import MODEL_DIR
 
 client = TestClient(app)
 
-_HAY_MODELOS = (MODEL_DIR / "manifiesto.json").exists()
+_HAY_MODELOS = _disponible()
 
 _NORMAL = {
     "duration": 0, "protocol_type": "tcp", "service": "http", "flag": "SF",

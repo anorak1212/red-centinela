@@ -129,14 +129,21 @@ con límites de uso, ninguno con tarjeta.
 
 ## CI
 
-`.github/workflows/ci.yml` corre ruff, pytest con cobertura (umbral 65, porque el
-repositorio no versiona dataset ni artefactos) y pip-audit como informe. Un
-segundo flujo, `respaldo.yml`, hace un `pg_dump` semanal de la tabla
-`predicciones` en Neon, cifrado con GPG y guardado 90 días como artefacto.
+`.github/workflows/ci.yml` está versionado y corre en cada push a `main`:
+instala `requirements.txt`, pasa `ruff` y mide cobertura con umbral 80.
 
-Los dos flujos se activan al subir la rama. No se pudieron probar en GitHub
-mientras el token de la cuenta no tuvo el permiso `workflow`; la lógica sí está
-probada en local: `ruff check .` pasa y las 123 pruebas también.
+Tal como está, ese flujo no puede terminar en verde, y conviene decirlo antes de
+que alguien lo descubra en la demo: no instala `requirements-dev.txt` (falta
+pytest, coverage y ruff) y el repositorio no versiona los 80 MB de artefactos,
+así que la cobertura real se queda en 69 %.
+
+La versión corregida está escrita en `docs/propuestas/ci.yml` (instala las
+dependencias de desarrollo, umbral 65, informe de cobertura como artefacto y
+pip-audit como aviso, no como bloqueo) y el respaldo semanal cifrado de Neon en
+`docs/propuestas/respaldo.yml`. No se pudieron subir: crear o modificar un
+archivo en `.github/workflows/` exige que el token tenga el permiso `workflow`, y
+el de esta cuenta no lo tiene. Con ese permiso se copian sobre
+`.github/workflows/` y quedan activos en el siguiente push.
 
 ## Convenciones
 
