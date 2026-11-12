@@ -23,7 +23,7 @@ if str(RAIZ) not in sys.path:
 
 from tablero import __version__, client
 from tablero.ui import datos, estilos
-from tablero.vistas import analizar, ayuda, historial, modelo, resumen
+from tablero.vistas import analizar, ayuda, historial, modelo, resumen, sistema
 
 st.set_page_config(
     page_title="Red Centinela",
@@ -37,8 +37,10 @@ estilos.aplicar()
 def _barra_lateral() -> None:
     with st.sidebar:
         st.markdown(
-            f'<p class="rc-titulo" style="font-size:1.2rem">Red Centinela</p>'
-            f'<p class="rc-sub" style="margin-bottom:.6rem">Tablero v{__version__}</p>',
+            '<div class="rc-brand"><div class="rc-brand-mark">'
+            '<div class="rc-brand-icon">⌁</div>'
+            '<div class="rc-brand-name">Red Centinela</div></div>'
+            f'<p class="rc-brand-meta">NETWORK THREAT MONITOR · v{__version__}</p></div>',
             unsafe_allow_html=True,
         )
 
@@ -88,6 +90,8 @@ paginas = [
             url_path="historial"),
     st.Page(modelo.render, title="Modelo y métricas", icon=":material/insights:",
             url_path="modelo"),
+    st.Page(sistema.render, title="Sistema", icon=":material/hub:",
+            url_path="sistema"),
     st.Page(ayuda.render, title="Ayuda", icon=":material/help:",
             url_path="ayuda"),
 ]

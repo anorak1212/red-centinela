@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from tablero import client
-from tablero.ui import datos, estilos
+from tablero.ui import datos, estilos, graficas
 
 RAIZ = Path(__file__).resolve().parents[2]
 MUESTRA = RAIZ / "datasets" / "sample_etiquetado.csv"
@@ -99,18 +99,31 @@ def _conexion_individual() -> None:
         datos.invalidar()
 
         if r["es_ataque"]:
-            st.error(f"**ATAQUE** · familia {r['clase'].upper()} · "
-                     f"p(ataque) = {r['probabilidad_ataque']:.4f}")
+            estilos.banda(
+                f"Ataque · familia {r['clase'].upper()}",
+                "El registro superó el umbral de decisión y quedó en el historial. "
+                "Si el bot está configurado, la alerta se envía por Telegram.",
+                [
+                    (f"{r['probabilidad_ataque']:.4f}", "p(ataque)", "probabilidad de la cabeza binaria"),
+                    (r["clase"], "Clase", f"confianza {r['probabilidad_clase']:.4f}"),
+                    (str(r["umbral"]), "Umbral", "punto de corte calibrado"),
+                    (str(r["id"]), "ID", "registro en el historial"),
+                ],
+            )
         else:
-            st.success(f"**NORMAL** · p(ataque) = {r['probabilidad_ataque']:.4f}")
+            estilos.banda(
+                "Tráfico normal",
+                "El registro no superó el umbral de decisión. Queda en el historial "
+                "para que el conteo de tráfico analizado sea real, no una muestra.",
+                [
+                    (f"{r['probabilidad_ataque']:.4f}", "p(ataque)", "por debajo del umbral"),
+                    (r["clase"], "Clase", f"confianza {r['probabilidad_clase']:.4f}"),
+                    (str(r["umbral"]), "Umbral", "punto de corte calibrado"),
+                    (str(r["id"]), "ID", "registro en el historial"),
+                ],
+            )
 
-        estilos.kpis([
-            ("Etiqueta", r["etiqueta"].upper(), f"id {r['id']}"),
-            ("Clase", r["clase"], f"p(clase) = {r['probabilidad_clase']:.4f}"),
-            ("p(ataque)", f"{r['probabilidad_ataque']:.4f}", f"umbral {r['umbral']}"),
-            ("Modelo", r["modelo"], f"versión {r['version_modelo']}"),
-        ], alerta=(0,) if r["es_ataque"] else ())
-        st.progress(min(1.0, float(r["probabilidad_ataque"])))
+        estilos.progress_probabilidad(r["probabilidad_ataque"], float(r["umbral"]))
 
         if r.get("avisos"):
             for aviso in r["avisos"]:
@@ -190,10 +203,17 @@ def _archivo_csv() -> None:
         ("Proporción", f"{100 * ataques / max(1, len(df)):.1f} %", "del lote"),
     ], alerta=(1,))
 
-    izquierda, derecha = st.columns([2, 3], gap="large")
+    izquierda, derecha = st.columns([3, 2], gap="large")
     with izquierda:
-        st.subheader("Por clase")
-        st.bar_chart(df["clase"].value_counts(), height=220, color="#0f5c4a")
+        conteo = (
+            df.groupby("clase", observed=True).size().reset_index(name="registros")
+            .sort_values("registros", ascending=False)
+        )
+        st.altair_chart(
+            graficas.barras_horizontales(conteo, "clase", "registros", "Filas del lote"),
+            width="stretch",
+        )
+        estilos.fuente("Distribución del lote tal como lo clasificó el modelo.")
     with derecha:
         st.subheader("Detección real")
         if any(familias):

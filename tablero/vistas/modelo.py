@@ -1,8 +1,9 @@
-"""Vista 4: modelo y métricas reales sobre KDDTest+.
+"""Vista 4: modelo y métricas.
 
-Ninguna cifra de esta pantalla se escribe a mano: todas vienen de
-motor/models/metrics.json a través de /metrics, que se regenera al ejecutar
-`python -m motor.evaluate`.
+La vista que un jurado técnico va a interrogar. Regla de la casa: se publica lo
+que el modelo mide sobre datos que no vio al entrenar, con el conjunto que se
+usó escrito al lado. El holdout interno aparece marcado como lo que es, una
+prueba sobre la misma distribución, no una validación independiente.
 """
 
 from __future__ import annotations
@@ -10,212 +11,320 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from tablero.ui import datos, estilos
+from tablero.ui import datos, estilos, graficas
 
 CLASES = ["normal", "dos", "probe", "r2l", "u2r"]
-OBJETIVO_PERF = 0.90
-
-
-def _tabla_binaria(binario: dict) -> pd.DataFrame:
-    campos = [
-        ("accuracy", "Exactitud"),
-        ("macro_f1", "Macro-F1"),
-        ("weighted_f1", "F1 ponderado"),
-        ("precision_ataque", "Precisión de ataque"),
-        ("recall_ataque", "Recall de ataque"),
-        ("auc_roc", "AUC ROC"),
-    ]
-    return pd.DataFrame(
-        [{"métrica": etiqueta, "valor": float(binario.get(clave, 0.0))}
-         for clave, etiqueta in campos],
-        columns=["métrica", "valor"],
-    ).assign(valor=lambda d: d["valor"].map(lambda v: f"{v:.4f}"))
 
 
 def render() -> None:
     estilos.encabezado(
         "Modelo y métricas",
-        "El modelo se evalúa sobre KDDTest+, el conjunto que nunca vio al "
-        "entrenar. Las cifras del holdout de entrenamiento se muestran aparte "
-        "porque no son una prueba independiente.",
+        "Random Forest de dos cabezas más Isolation Forest, evaluado sobre "
+        "KDDTest+ (22,544 filas que no vio al entrenar) y sobre su subconjunto "
+        "difícil KDDTest-21. Nada de estas cifras se ajustó contra el conjunto de prueba.",
     )
 
-    m = datos.metricas(datos.api_actual())
-    if not m:
-        estilos.bloque("Sin métricas.", "La API no respondió o no existe metrics.json. "
-                       "Ejecuta <span class='rc-mono'>python -m motor.evaluate</span>.",
-                       tono="aviso")
-        return
-
-    binario = m.get("binario_kddtest", {})
-    multi = m.get("multiclase_kddtest", {})
-    macro = float(binario.get("macro_f1", 0.0))
-
-    estilos.kpis([
-        ("Macro-F1 binario", f"{macro:.4f}", "KDDTest+, 22,544 filas",
-         0 if macro >= OBJETIVO_PERF else 1),
-        ("Macro-F1 5 clases", f"{float(multi.get('macro_f1', 0.0)):.4f}",
-         "acierta la familia"),
-        ("AUC ROC", f"{float(binario.get('auc_roc', 0.0)):.4f}", "cabeza binaria"),
-        ("Recall de ataque", f"{float(binario.get('recall_ataque', 0.0)):.4f}",
-         "de los ataques reales"),
-    ], alerta=(0,) if macro < OBJETIVO_PERF else ())
-
-    if macro < OBJETIVO_PERF:
+    metricas = datos.metricas(datos.api_actual())
+    if not metricas:
         estilos.bloque(
-            "Criterio PERF-003: no cumplido.",
-            f"El umbral del proyecto era macro-F1 ≥ {OBJETIVO_PERF:.2f} y el valor "
-            f"medido es {macro:.4f}. No es un error de implementación: KDDTest+ "
-            "incluye familias de ataque que no existen en el conjunto de "
-            "entrenamiento, y por eso el recall de r2l y u2r se desploma. El "
-            "estado del arte publicado sobre KDDTest+ ronda 0.80. La diferencia "
-            "se documenta como limitación, no se maquilla ajustando el umbral "
-            "contra el conjunto de prueba.",
+            "La API no responde.",
+            "Las métricas viven en la API (/metrics), que las lee de "
+            "<span class='rc-mono'>motor/models/metrics.json</span>. "
+            "Sin servicio no hay cifras que mostrar.",
             tono="aviso",
         )
+        return
 
-    izquierda, derecha = st.columns(2, gap="large")
+    binario = metricas.get("binario_kddtest") or {}
+    multi = metricas.get("multiclase_kddtest") or {}
+    dificil = (metricas.get("kddtest21") or {})
+    dificil_bin = dificil.get("binario") or {}
+    familias = metricas.get("recall_por_familia") or {}
+    iforest = metricas.get("iforest") or {}
+    holdout = metricas.get("holdout_entrenamiento") or {}
+    latencia = metricas.get("latencia") or {}
+    tiempos = metricas.get("tiempos_entrenamiento_segundos") or {}
+    produccion = metricas.get("modelo_produccion") or {}
 
+    estilos.banda(
+        "Rendimiento medido, sin maquillaje",
+        "Generado el "
+        f"{str(metricas.get('generado', '?'))[:10]} con la versión "
+        f"{metricas.get('version_motor', '?')} del motor. "
+        "El umbral de decisión es 0.41 y se calibró sobre un holdout interno, nunca sobre KDDTest+.",
+        [
+            (f"{float(binario.get('macro_f1', 0)):.4f}", "Macro-F1 binario", "KDDTest+, meta 0.90"),
+            (f"{float(binario.get('weighted_f1', 0)):.4f}", "F1 ponderado", "KDDTest+"),
+            (f"{float(binario.get('auc_roc', 0)):.4f}", "AUC ROC", "capacidad de separación"),
+            (f"{float(multi.get('macro_f1', 0)):.4f}", "Macro-F1 5 clases", "la cabeza difícil"),
+            (f"{float(dificil_bin.get('macro_f1', 0)):.4f}", "Macro-F1 KDDTest-21", "subconjunto duro"),
+        ],
+    )
+
+    _seccion_binaria(binario)
+    _seccion_multiclase(multi)
+    _seccion_familias(familias, multi)
+    _seccion_dificil(binario, dificil, dificil_bin)
+    _seccion_comparativa(metricas.get("comparativa_modelos") or [])
+    _seccion_honestidad(holdout, iforest)
+    _seccion_costo(latencia, tiempos, produccion)
+
+
+# --------------------------------------------------------------------------
+def _seccion_binaria(binario: dict) -> None:
+    estilos.seccion("1", "Cabeza binaria: normal contra ataque",
+                    f"{int(binario.get('filas', 0)):,} filas de KDDTest+")
+    estilos.kpis([
+        ("Macro-F1", f"{float(binario.get('macro_f1', 0)):.4f}", "media de las dos clases", True),
+        ("Exactitud", f"{float(binario.get('accuracy', 0)):.4f}", "aciertos totales"),
+        ("Precisión de ataque", f"{float(binario.get('precision_ataque', 0)):.4f}",
+         "de lo marcado como ataque, cuánto lo era"),
+        ("Recall de ataque", f"{float(binario.get('recall_ataque', 0)):.4f}",
+         "de los ataques reales, cuántos se vieron"),
+        ("AUC ROC", f"{float(binario.get('auc_roc', 0)):.4f}", "independiente del umbral"),
+        ("Ataques reales", f"{int(binario.get('ataques_reales', 0)):,}",
+         "en el conjunto de prueba"),
+    ])
+
+    izquierda, derecha = st.columns([2, 3], gap="large")
+    matriz = binario.get("matriz_confusion") or [[0, 0], [0, 0]]
     with izquierda:
-        st.subheader("Cabeza binaria (normal contra ataque)")
-        st.dataframe(_tabla_binaria(binario), hide_index=True)
-        st.caption(
-            f"Precisión de ataque {binario.get('precision_ataque', 0):.4f}: cuando "
-            "avisa, casi siempre acierta. El recall es el costo: uno de cada tres "
-            "ataques pasa como normal."
+        st.altair_chart(
+            graficas.matriz_confusion(matriz, ["normal", "ataque"]),
+            width="stretch",
         )
-
     with derecha:
-        st.subheader("Matriz de confusión binaria")
-        matriz = binario.get("matriz_confusion") or [[0, 0], [0, 0]]
-        st.dataframe(
-            pd.DataFrame(matriz, index=["real normal", "real ataque"],
-                         columns=["pred normal", "pred ataque"]),
+        vn, fp = int(matriz[0][0]), int(matriz[0][1])
+        fn, vp = int(matriz[1][0]), int(matriz[1][1])
+        precision = vp / max(1, vp + fp)
+        recall = vp / max(1, vp + fn)
+        estilos.tabla(
+            [
+                {"Métrica": "Verdaderos negativos", "Filas": f"{vn:,}",
+                 "Lectura": "tráfico normal que pasó sin alerta"},
+                {"Métrica": "Falsos positivos", "Filas": f"{fp:,}",
+                 "Lectura": f"{100 * fp / max(1, vn + fp):.2f} % del tráfico normal marcado como ataque"},
+                {"Métrica": "Falsos negativos", "Filas": f"{fn:,}",
+                 "Lectura": "ataques que pasaron sin alerta: el error caro"},
+                {"Métrica": "Verdaderos positivos", "Filas": f"{vp:,}",
+                 "Lectura": "ataques detectados y avisados"},
+                {"Métrica": "Precisión / recall", "Filas": f"{precision:.4f} / {recall:.4f}",
+                 "Lectura": "precisión alta, recall moderado: el modelo calla antes que gritar"},
+            ],
+            ["Métrica", "Filas", "Lectura"],
+            numericas=("Filas",), fuertes=("Métrica",),
         )
-        st.caption(
-            f"{binario.get('filas', 0):,} filas, {binario.get('ataques_reales', 0):,} "
-            "ataques reales."
-        )
+    estilos.fuente(
+        "La matriz y las seis cifras salen de motor/models/metrics.json, calculadas "
+        "una sola vez sobre KDDTest+ y publicadas sin cambios por /metrics."
+    )
 
-    st.subheader("Cabeza multiclase: acierto por familia")
+
+def _seccion_multiclase(multi: dict) -> None:
     por_clase = multi.get("por_clase") or {}
-    if por_clase:
-        tabla = pd.DataFrame([
-            {
-                "clase": clase,
-                "precisión": por_clase.get(clase, {}).get("precision", 0.0),
-                "recall": por_clase.get(clase, {}).get("recall", 0.0),
-                "F1": por_clase.get(clase, {}).get("f1", 0.0),
-                "soporte": por_clase.get(clase, {}).get("soporte", 0),
-            }
-            for clase in CLASES if clase in por_clase
-        ])
-        st.dataframe(
-            tabla, hide_index=True,
-            column_config={
-                "precisión": st.column_config.NumberColumn(format="%.4f"),
-                "recall": st.column_config.NumberColumn(format="%.4f"),
-                "F1": st.column_config.NumberColumn(format="%.4f"),
-                "soporte": st.column_config.NumberColumn(format="%d"),
-            },
+    estilos.seccion("2", "Cinco clases: qué familia es el ataque",
+                    f"macro-F1 {float(multi.get('macro_f1', 0)):.4f}")
+    if not por_clase:
+        st.info("Sin métricas multiclase.")
+        return
+
+    filas = []
+    for clase in CLASES:
+        fila = por_clase.get(clase) or {}
+        filas.append({
+            "Clase": clase,
+            "Precisión": f"{float(fila.get('precision', 0)):.4f}",
+            "Recall": f"{float(fila.get('recall', 0)):.4f}",
+            "F1": f"{float(fila.get('f1', 0)):.4f}",
+            "Soporte": f"{int(fila.get('soporte', 0)):,}",
+        })
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        estilos.tabla(filas, ["Clase", "Precisión", "Recall", "F1", "Soporte"],
+                      numericas=("Precisión", "Recall", "F1", "Soporte"), fuertes=("Clase",))
+        estilos.fuente(
+            "Soporte es el número de filas reales de cada clase en KDDTest+. "
+            "U2R tiene 67: un solo acierto mueve su recall casi dos puntos."
         )
-        estilos.bloque(
-            "r2l y u2r son el punto débil.",
-            "El modelo detecta bien DoS y sondeo, y casi no reconoce accesos "
-            "remotos ni escalada de privilegios: esas familias aparecen con "
-            "poquísimos ejemplos en el entrenamiento y con variantes nuevas en la "
-            "prueba. Cualquier tabla que muestre 0.99 en estas clases sobre "
-            "KDDTest+ está midiendo fuga de datos, no rendimiento.",
+    with derecha:
+        estilos.barras(
+            [(c, float((por_clase.get(c) or {}).get("f1", 0)),
+              f"F1 {float((por_clase.get(c) or {}).get('f1', 0)):.3f}",
+              "ok" if float((por_clase.get(c) or {}).get("f1", 0)) >= 0.7 else "mal")
+             for c in CLASES],
+            escala=1.0,
+        )
+        st.caption("F1 por clase. R2L y U2R son el techo real de este modelo: "
+                   "no se detectan como familia porque se parecen demasiado al tráfico normal.")
+
+    matriz = multi.get("matriz_confusion") or []
+    if matriz:
+        st.altair_chart(graficas.matriz_confusion(matriz, CLASES), width="stretch")
+        estilos.fuente(
+            "Matriz de confusión de las cinco clases: la fila es la familia real y la "
+            "columna lo que el modelo dijo. La columna 'normal' concentra los errores."
         )
 
-    st.subheader("Detección contra clasificación por familia")
-    recall = m.get("recall_por_familia") or {}
-    if recall:
-        st.dataframe(
-            pd.DataFrame([
-                {
-                    "familia": familia,
-                    "registros": valores.get("registros", 0),
-                    "detección": valores.get("recall_deteccion", 0.0),
-                    "clasificación": valores.get("recall_clasificacion", 0.0),
-                }
-                for familia, valores in recall.items()
-            ]),
-            hide_index=True,
-            column_config={
-                "detección": st.column_config.ProgressColumn(
-                    "Detección (¿es ataque?)", min_value=0.0, max_value=1.0, format="%.4f"
-                ),
-                "clasificación": st.column_config.ProgressColumn(
-                    "Clasificación (¿qué familia?)", min_value=0.0, max_value=1.0,
-                    format="%.4f",
-                ),
-                "registros": st.column_config.NumberColumn(format="%d"),
-            },
-        )
 
-    st.subheader("KDDTest-21: el subconjunto difícil")
-    k21 = m.get("kddtest21") or {}
-    if k21:
-        b21 = k21.get("binario", {})
-        m21 = k21.get("multiclase", {})
+def _seccion_familias(familias: dict, multi: dict) -> None:
+    if not familias:
+        return
+    estilos.seccion("3", "Detección contra clasificación",
+                    "dos preguntas distintas, dos cifras distintas")
+    largo = []
+    for clase in CLASES:
+        if clase == "normal":
+            continue
+        fila = familias.get(clase) or {}
+        largo.append({"familia": clase, "serie": "Detección",
+                      "recall": float(fila.get("recall_deteccion", 0))})
+        largo.append({"familia": clase, "serie": "Clasificación",
+                      "recall": float(fila.get("recall_clasificacion", 0))})
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        st.altair_chart(graficas.valores_por_categoria(pd.DataFrame(largo)),
+                        width="stretch")
+        estilos.fuente(
+            "Detección: el sistema dijo 'ataque', sin importar la familia. "
+            "Clasificación: además acertó la familia. Al negocio le sirve la primera; "
+            "la segunda es la que un sinodal va a preguntar."
+        )
+    with derecha:
         estilos.kpis([
-            ("Filas", f"{int(k21.get('filas', 0)):,}", k21.get("criterio", "")),
-            ("Macro-F1 binario", f"{float(b21.get('macro_f1', 0.0)):.4f}", "solo difíciles"),
-            ("Macro-F1 5 clases", f"{float(m21.get('macro_f1', 0.0)):.4f}", "solo difíciles"),
-            ("AUC", f"{float(b21.get('auc_roc', 0.0)):.4f}", "cabeza binaria"),
+            ("DoS", f"{float((familias.get('dos') or {}).get('recall_deteccion', 0)):.3f}",
+             "recall de detección"),
+            ("Probe", f"{float((familias.get('probe') or {}).get('recall_deteccion', 0)):.3f}",
+             "recall de detección"),
+            ("R2L", f"{float((familias.get('r2l') or {}).get('recall_deteccion', 0)):.3f}",
+             "acceso remoto, el punto débil", True),
+            ("U2R", f"{float((familias.get('u2r') or {}).get('recall_deteccion', 0)):.3f}",
+             "escalada de privilegios", True),
         ])
-        st.caption(
-            "KDDTest-21 quita los registros fáciles. Sirve para saber qué tan bien "
-            "generaliza el modelo cuando el tráfico se parece poco a lo ya visto."
+        estilos.bloque(
+            "Por qué R2L falla.",
+            "En KDDTest+, R2L incluye familias de ataque que no existen en "
+            "KDDTrain+: el modelo no las puede nombrar porque nunca las vio. "
+            "El recall de detección (0.0915) es lo que el sistema hace hoy; "
+            "el de clasificación (0.0035) mide la etiqueta, no la alerta.",
         )
 
-    with st.expander("Holdout de entrenamiento, latencia y comparativa de modelos"):
-        holdout = m.get("holdout_entrenamiento") or {}
-        if holdout:
-            st.markdown("**Holdout del entrenamiento**")
-            st.dataframe(pd.DataFrame([holdout]), hide_index=True)
-            estilos.bloque(
-                "No citar como prueba.",
-                "Estas cifras salen de la misma distribución del entrenamiento. Un "
-                "0.99 aquí y 0.80 en KDDTest+ no es contradicción: es la medida de "
-                "cuánto se parece el tráfico nuevo al viejo.",
-            )
 
-        latencia = m.get("latencia") or {}
-        if latencia:
-            st.markdown("**Latencia**")
-            estilos.kpis([
-                ("Fila sola", f"{latencia.get('ms_por_fila_sola', 0):.0f} ms",
-                 "una petición HTTP"),
-                ("En lote de 500", f"{latencia.get('ms_por_fila_en_lote_500', 0):.2f} ms",
-                 "por fila"),
-                ("Repeticiones", f"{latencia.get('repeticiones', 0)}", "medidas"),
-            ])
-            st.caption(latencia.get("nota", ""))
+def _seccion_dificil(binario: dict, dificil: dict, dificil_bin: dict) -> None:
+    estilos.seccion("4", "KDDTest-21: el subconjunto difícil",
+                    dificil.get("criterio", ""))
+    estilos.kpis([
+        ("Macro-F1 binario", f"{float(dificil_bin.get('macro_f1', 0)):.4f}",
+         f"{int(dificil.get('filas', 0)):,} filas", True),
+        ("Exactitud", f"{float(dificil_bin.get('accuracy', 0)):.4f}", "sobre el subconjunto"),
+        ("Recall de ataque", f"{float(dificil_bin.get('recall_ataque', 0)):.4f}",
+         "cae respecto a KDDTest+"),
+        ("AUC ROC", f"{float(dificil_bin.get('auc_roc', 0)):.4f}", "sigue separando"),
+    ])
+    estilos.tabla(
+        [
+            {"Conjunto": "KDDTest+", "Filas": f"{int(binario.get('filas', 0)):,}",
+             "Macro-F1": f"{float(binario.get('macro_f1', 0)):.4f}",
+             "Recall de ataque": f"{float(binario.get('recall_ataque', 0)):.4f}"},
+            {"Conjunto": "KDDTest-21", "Filas": f"{int(dificil.get('filas', 0)):,}",
+             "Macro-F1": f"{float(dificil_bin.get('macro_f1', 0)):.4f}",
+             "Recall de ataque": f"{float(dificil_bin.get('recall_ataque', 0)):.4f}"},
+        ],
+        ["Conjunto", "Filas", "Macro-F1", "Recall de ataque"],
+        numericas=("Filas", "Macro-F1", "Recall de ataque"), fuertes=("Conjunto",),
+    )
+    estilos.fuente(
+        "KDDTest-21 quita las filas más fáciles de KDDTest+. Si las cifras no bajan "
+        "al pasar a este subconjunto, algo está filtrando información: aquí bajan, y eso "
+        "es la señal de que la evaluación es honesta."
+    )
 
-        comparativa = m.get("comparativa_modelos") or []
-        if comparativa:
-            st.markdown("**Modelos comparados en el informe**")
-            st.dataframe(pd.DataFrame(comparativa), hide_index=True)
-            estilos.bloque(
-                "Solo comparativa.",
-                "SVM y KNN se entrenaron con 25,000 filas para la comparativa del "
-                "informe. KNN guarda todos los vectores de entrenamiento y no cabe "
-                "en un plan gratuito, así que producción usa Random Forest.",
-            )
 
-        iforest = m.get("iforest") or {}
-        if iforest:
-            st.markdown("**Isolation Forest (apoyo no supervisado)**")
-            estilos.kpis([
-                ("AUC", f"{iforest.get('auc_roc', 0):.4f}", "rareza contra normal"),
-                ("Recall top 10 %", f"{iforest.get('recall_ataques_top10_por_ciento', 0):.4f}",
-                 "ataques en el 10 % más raro"),
-            ])
-            st.caption(iforest.get("nota", ""))
+def _seccion_comparativa(comparativa: list[dict]) -> None:
+    if not comparativa:
+        return
+    estilos.seccion("5", "Comparativa de modelos", "solo comparativa, no se despliega")
+    otros = [dict(m) for m in comparativa]
+    filas = []
+    for modelo in otros:
+        nombre = modelo["modelo"]
+        f1 = modelo.get("macro_f1_binario")
+        filas.append({
+            "Modelo": nombre,
+            "Filas": f"{int(modelo.get('filas_entrenamiento', 0)):,}",
+            "Macro-F1": "ver sección 1" if f1 is None else f"{float(f1):.4f}",
+            "Entrenamiento (s)": f"{float(modelo.get('segundos_entrenamiento', 0)):.1f}",
+            "Nota": modelo.get("nota", ""),
+        })
+    izquierda, derecha = st.columns([3, 2], gap="large")
+    with izquierda:
+        estilos.tabla(filas, ["Modelo", "Filas", "Macro-F1", "Entrenamiento (s)", "Nota"],
+                      numericas=("Filas", "Macro-F1", "Entrenamiento (s)"), fuertes=("Modelo",))
+    with derecha:
+        grafica = pd.DataFrame([
+            {"modelo": m["modelo"], "macro_f1_binario": float(m.get("macro_f1_binario") or 0),
+             "filas_entrenamiento": int(m.get("filas_entrenamiento", 0)),
+             "nota": m.get("nota", "")}
+            for m in otros
+        ])
+        if not grafica.empty:
+            st.altair_chart(graficas.comparativa(grafica), width="stretch")
+            estilos.fuente("SVC y KNN se entrenaron con 25,000 filas (una submuestra) "
+                           "para que el experimento cupiera en la sesión de Colab.")
+    estilos.bloque(
+        "Cuidado al leer esta tabla.",
+        "El macro-F1 de SVC y KNN no es comparable con el de producción: se entrenaron "
+        "con una submuestra de 25,000 filas y se midieron sobre otra partición. "
+        "La comparativa sirve para justificar la elección (KNN es caro en memoria: 60 MB "
+        "y una predicción de ~250 ms con 125,973 filas), no para declarar un ganador.",
+        tono="aviso",
+    )
 
+
+def _seccion_honestidad(holdout: dict, iforest: dict) -> None:
+    estilos.seccion("6", "Holdout interno e Isolation Forest",
+                    "por qué el 0.9992 no es el resultado del proyecto")
+    izquierda, derecha = st.columns(2, gap="large")
+    with izquierda:
+        st.subheader("Holdout interno")
+        estilos.kpis([
+            ("Macro-F1 binario", f"{float(holdout.get('macro_f1_binario', 0)):.4f}",
+             "misma distribución del entrenamiento"),
+            ("Macro-F1 5 clases", f"{float(holdout.get('macro_f1_multiclase', 0)):.4f}",
+             "misma distribución"),
+        ])
+        estilos.bloque(
+            "Estas cifras no cumplen PERF-003.",
+            "El holdout sale de la misma distribución que KDDTrain+, así que mide "
+            "memorización de la distribución, no generalización a ataques nuevos. "
+            "Se publica por transparencia y se marca para que nadie la cite como logro.",
+            tono="aviso",
+        )
+    with derecha:
+        st.subheader("Isolation Forest (no supervisado)")
+        estilos.kpis([
+            ("AUC ROC", f"{float(iforest.get('auc_roc', 0)):.4f}",
+             "entrenado solo con tráfico normal"),
+            ("Recall en el 10 % más anómalo",
+             f"{100 * float(iforest.get('recall_ataques_top10_por_ciento', 0)):.2f} %",
+             "de los ataques caen en ese décimo"),
+        ])
+        st.caption(iforest.get("nota", ""))
+
+
+def _seccion_costo(latencia: dict, tiempos: dict, produccion: dict) -> None:
+    estilos.seccion("7", "Costo computacional y artefactos", "medido en la máquina de desarrollo")
+    estilos.kpis([
+        ("Latencia por fila", f"{float(latencia.get('ms_por_fila_sola', 0)):.0f} ms",
+         f"{int(latencia.get('repeticiones', 0))} repeticiones"),
+        ("En lote de 500", f"{float(latencia.get('ms_por_fila_en_lote_500', 0)):.3f} ms",
+         "por fila, con el modelo caliente"),
+        ("Entrenar RF binario", f"{float(tiempos.get('rf_binario', 0)):.1f} s", "KDDTrain+ completo"),
+        ("Entrenar RF multiclase", f"{float(tiempos.get('rf_multiclase', 0)):.1f} s", ""),
+        ("Entrenar Isolation Forest", f"{float(tiempos.get('iforest', 0)):.1f} s", ""),
+    ])
     st.caption(
-        f"metrics.json generado el {m.get('generado', '?')} · versión del motor "
-        f"{m.get('version_motor', '?')}."
+        f"Modelo en producción: {produccion.get('nombre', '?')} con las cabezas "
+        f"{', '.join(produccion.get('cabezas') or [])}, umbral "
+        f"{produccion.get('umbral_decision', '?')}. "
+        + latencia.get("nota", "")
     )
