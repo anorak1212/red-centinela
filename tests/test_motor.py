@@ -66,6 +66,19 @@ def test_preprocessor_categoria_desconocida_no_falla():
     assert np.isfinite(X).all()
 
 
+def test_preprocessor_acepta_categorias_en_minusculas():
+    """`flag=SF` y `flag=sf` deben codificarse igual: NSL-KDD entrenó en mayúsculas."""
+    df_fit = pd.DataFrame([_fila_sintetica()])
+    pp = Preprocessor().fit(df_fit)
+    exacta = pp.transform(pd.DataFrame([_fila_sintetica()]))
+    minusculas = _fila_sintetica()
+    for col in CATEGORICAL:
+        minusculas[col] = minusculas[col].lower()
+    np.testing.assert_array_equal(
+        exacta, pp.transform(pd.DataFrame([minusculas]))
+    )
+
+
 def test_preprocessor_requiere_fit():
     with pytest.raises(RuntimeError):
         Preprocessor().transform(pd.DataFrame([_fila_sintetica()]))

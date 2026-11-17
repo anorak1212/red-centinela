@@ -162,6 +162,32 @@ def test_predict_normal():
 
 
 @pytest.mark.skipif(not _HAY_MODELOS, reason="modelos no entrenados")
+def test_fila_normal_del_smoke_no_se_vuelve_ataque():
+    """El smoke usa un registro normal de KDDTrain+ con flag SF.
+
+    La API pasa las categóricas a minúsculas. Sin la correspondencia con las
+    categorías entrenadas, `sf` entra como bandera desconocida y cruza el
+    umbral de 0.01 aunque la conexión sea normal.
+    """
+    from scripts.smoke_prod import _FILA_NORMAL
+
+    r = client.post("/predict", json={"features": _FILA_NORMAL})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["etiqueta"] == "normal"
+    assert body["es_ataque"] is False
+    assert body["probabilidad_ataque"] < body["umbral"]
+    assert body["avisos"] == []
+
+    minusculas = dict(_FILA_NORMAL)
+    for col in ("protocol_type", "service", "flag"):
+        minusculas[col] = minusculas[col].lower()
+    r2 = client.post("/predict", json={"features": minusculas})
+    assert r2.status_code == 200
+    assert r2.json()["etiqueta"] == "normal"
+
+
+@pytest.mark.skipif(not _HAY_MODELOS, reason="modelos no entrenados")
 def test_predict_ataque_evidente():
     r = client.post("/predict", json={"features": _ATAQUE})
     assert r.status_code == 200

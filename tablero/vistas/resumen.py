@@ -84,7 +84,7 @@ def render() -> None:
     almacen = estado.get("almacen") or {}
     estilos.kpis([
         ("Umbral de decisión", str(estado.get("umbral_decision") or "sin datos"),
-         "calibrado sobre holdout interno"),
+         "recalibrado con familias no vistas"),
         ("Artefactos", "íntegros" if estado.get("integridad_artefactos") else "no verificados",
          "cinco .joblib contra el manifiesto SHA-256",
          not estado.get("integridad_artefactos")),

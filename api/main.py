@@ -231,11 +231,12 @@ class _NoDisponible(RuntimeError):
 
 
 def _avisos_categorias(pp, features: dict) -> list[str]:
-    """Avisa cuando una categoría no existía en el entrenamiento."""
+    """Avisa si la categoría no existía en el entrenamiento, sin importar mayúsculas."""
     avisos: list[str] = []
     for col in ("protocol_type", "service", "flag"):
         valor = str(features[col])
-        if valor not in pp.cat_categories_[col]:
+        conocidas = {str(v).lower() for v in pp.cat_categories_[col]}
+        if valor.lower() not in conocidas:
             avisos.append(
                 f"{col}='{valor}' no apareció en el entrenamiento; "
                 "se codificó como categoría desconocida."

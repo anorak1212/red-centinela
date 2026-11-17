@@ -39,8 +39,19 @@ class Preprocessor:
         for c in CATEGORICAL:
             cats = self.cat_categories_[c]
             mapa = {valor: i for i, valor in enumerate(cats)}
+            # La API y el tablero normalizan las categóricas a minúsculas, pero
+            # NSL-KDD entrenó `flag` en mayúsculas (SF, S0, REJ). Sin este alias
+            # una conexión normal se codifica como bandera desconocida y cambia
+            # de etiqueta. La coincidencia exacta sigue teniendo prioridad.
+            alias: dict[str, int] = {}
+            for i, valor in enumerate(cats):
+                alias.setdefault(str(valor).lower(), i)
+            valores = df[c].astype(str)
             codes = (
-                df[c].astype(str).map(mapa).fillna(-1).to_numpy(dtype=int)
+                valores.map(mapa)
+                .fillna(valores.str.lower().map(alias))
+                .fillna(-1)
+                .to_numpy(dtype=int)
             )
             mat = np.zeros((n, len(cats)), dtype=np.float32)
             valid = codes >= 0

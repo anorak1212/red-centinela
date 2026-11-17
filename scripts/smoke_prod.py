@@ -145,7 +145,8 @@ def _predict_una(api: str, res: Resultado) -> int | None:
         "POST /predict normal",
         "OK" if esperado else "FALLO",
         f"{r.status_code}, etiqueta={body['etiqueta']}, "
-        f"p(ataque)={body['probabilidad_ataque']}, id={body['id']}",
+        f"p(ataque)={body['probabilidad_ataque']:.6f}, "
+        f"umbral={body['umbral']}, clase={body['clase']}, id={body['id']}",
     )
     return int(body["id"])
 

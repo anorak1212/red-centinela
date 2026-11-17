@@ -52,7 +52,7 @@ def render() -> None:
         f"{str(metricas.get('generado', '?'))[:10]} con la versión "
         f"{metricas.get('version_motor', '?')} del motor. "
         f"El umbral de decisión es {_f(produccion.get('umbral_decision'), 2)} y se "
-        "calibró sobre un holdout interno, nunca sobre KDDTest+.",
+        "recalibrado con familias de ataque no vistas, nunca sobre KDDTest+.",
         [
             (f"{float(binario.get('macro_f1', 0)):.4f}", "Macro-F1 binario", "KDDTest+, meta 0.90"),
             (f"{float(binario.get('weighted_f1', 0)):.4f}", "F1 ponderado", "KDDTest+"),
