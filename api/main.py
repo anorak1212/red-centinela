@@ -22,12 +22,13 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from functools import lru_cache
 
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, Query, Request
+from fastapi import BackgroundTasks, FastAPI, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -48,7 +49,9 @@ from .db import (
     init_db,
     listar_historial,
     marcar_alerta,
+    registrar_envio,
     resumen,
+    resumen_alertas,
 )
 from .schemas import (
     BatchRequest,
@@ -73,6 +76,19 @@ VENTANA_TASA = float(os.environ.get("REDCENTINELA_RATE_WINDOW", "60"))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    try:
+        from alertas import telegram
+
+        # El contador de alertas deja de vivir solo en memoria: cada envío real
+        # se guarda en la base y sobrevive a los reinicios del servicio.
+        telegram.registrar_persistencia(registrar_envio)
+        # Un lote agrupado se envía segundos después del request que lo originó.
+        # Este gancho marca esas filas cuando el Bot API confirma el mensaje.
+        telegram.registrar_confirmados(
+            lambda ids: [marcar_alerta(i, True) for i in ids]
+        )
+    except Exception:  # noqa: BLE001, S110 - sin persistencia, el proceso sigue
+        pass
     try:
         _sistema()
     except Exception:  # noqa: BLE001, S110 - /health responde aunque falte el modelo
@@ -284,7 +300,12 @@ def _persistir(resultado: dict, features: dict, ts: str) -> int:
 
 
 def _alertar_en_segundo_plano(id_prediccion: int, resultado: dict) -> None:
-    """Tarea de fondo: no suma latencia al p95 de /predict."""
+    """Tarea de fondo: no suma latencia al p95 de /predict.
+
+    La marca de la fila solo se pone cuando el Bot API confirmó el envío. Antes
+    se marcaba al encolar, y el historial acababa diciendo "enviada" para
+    mensajes que aún estaban en la ventana de agrupación.
+    """
     if not resultado["es_ataque"]:
         return
     try:
@@ -292,8 +313,10 @@ def _alertar_en_segundo_plano(id_prediccion: int, resultado: dict) -> None:
     except Exception:  # noqa: BLE001
         marcar_alerta(id_prediccion, False)
         return
-    estado = telegram.notificar(resultado)
-    marcar_alerta(id_prediccion, bool(estado.get("ok")))
+    estado = telegram.notificar(resultado, id_prediccion=id_prediccion)
+    if estado.get("estado") == "enviado":
+        for id_ in estado.get("ids_confirmados") or [id_prediccion]:
+            marcar_alerta(id_, True)
 
 
 # --------------------------------------------------------------------------
@@ -348,8 +371,9 @@ def metrics():
 
 
 @app.post("/predict", response_model=PredictResponse)
-def predict(req: PredictRequest, tareas: BackgroundTasks):
+def predict(req: PredictRequest, tareas: BackgroundTasks, response: Response):
     features = req.features.model_dump()
+    inicio = time.perf_counter()
     try:
         resultado = _predecir_una(features, origen="api")
     except _NoDisponible as exc:
@@ -358,6 +382,11 @@ def predict(req: PredictRequest, tareas: BackgroundTasks):
         return JSONResponse(
             status_code=500, content={"detail": "No se pudo ejecutar la predicción."}
         )
+    # PERF-006 se mide sobre el cómputo del servidor. Sin esta cabecera, el
+    # cliente solo puede medir ida y vuelta por internet, que no es lo mismo.
+    response.headers["Server-Timing"] = (
+        f"predict;dur={(time.perf_counter() - inicio) * 1000:.2f}"
+    )
 
     ts = datetime.now(UTC).isoformat(timespec="seconds")
     id_pred = _persistir(resultado, features, ts)
@@ -371,8 +400,9 @@ def predict(req: PredictRequest, tareas: BackgroundTasks):
 
 
 @app.post("/predict/batch", response_model=BatchResponse)
-def predict_batch(req: BatchRequest, tareas: BackgroundTasks):
+def predict_batch(req: BatchRequest, tareas: BackgroundTasks, response: Response):
     filas = [item.features.model_dump() for item in req.items]
+    inicio = time.perf_counter()
     try:
         resultados = _decidir(filas, origen="api-lote")
     except _NoDisponible as exc:
@@ -381,6 +411,9 @@ def predict_batch(req: BatchRequest, tareas: BackgroundTasks):
         return JSONResponse(
             status_code=500, content={"detail": "No se pudo ejecutar la predicción."}
         )
+    response.headers["Server-Timing"] = (
+        f"predict;dur={(time.perf_counter() - inicio) * 1000:.2f}"
+    )
 
     salida = []
     for resultado, features in zip(resultados, filas, strict=True):
@@ -408,7 +441,22 @@ def history_resumen():
 def alertas_estado():
     from alertas import telegram
 
-    return telegram.estado()
+    estado = telegram.estado()
+    # El contador en memoria se reinicia con el proceso; el persistido no. Se
+    # reporta el mayor de los dos para no perder envíos de esta sesión y para
+    # que un reinicio de Render no borre la evidencia de entregas anteriores.
+    persistido = resumen_alertas()
+    estado["enviados"] = max(int(estado.get("enviados") or 0),
+                             int(persistido.get("enviados") or 0))
+    estado["fallidos"] = max(int(estado.get("fallidos") or 0),
+                             int(persistido.get("fallidos") or 0))
+    estado["ultimo_envio_exitoso"] = (
+        persistido.get("ultimo_envio_exitoso") or estado.get("ultimo_envio_exitoso")
+    )
+    # "Persistente" describe el almacén, no el deseo: SQLite local se pierde al
+    # reiniciar el servicio en Render.
+    estado["persistente"] = bool(descripcion().get("persistente"))
+    return estado
 
 
 @app.post("/alertas/prueba")

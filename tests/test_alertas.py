@@ -17,9 +17,13 @@ def _sin_credenciales(monkeypatch):
     monkeypatch.delenv("REDCENTINELA_TELEGRAM_CHAT_ID", raising=False)
     telegram._pendientes.clear()
     telegram._ultimo_envio = 0.0
+    telegram.registrar_persistencia(None)
+    telegram.registrar_confirmados(None)
     yield
     telegram._pendientes.clear()
     telegram._ultimo_envio = 0.0
+    telegram.registrar_persistencia(None)
+    telegram.registrar_confirmados(None)
 
 
 def _resultado() -> dict:
@@ -125,6 +129,80 @@ def test_error_de_red_no_expone_la_url(monkeypatch):
     resultado = telegram.enviar_prueba()
     assert resultado["ok"] is False
     assert "1:x" not in str(resultado)
+
+
+def test_envio_exitoso_avisa_al_gancho_de_persistencia(monkeypatch):
+    """El envío real deja rastro fuera de la memoria del proceso."""
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_TOKEN", "1:x")
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_CHAT_ID", "7")
+    monkeypatch.setattr(
+        telegram.requests, "post",
+        lambda *a, **k: _RespuestaFalsa(200, {"ok": True, "result": {"message_id": 9}}),
+    )
+    registros: list[tuple] = []
+    telegram.registrar_persistencia(lambda tipo, ok, mid: registros.append((tipo, ok, mid)))
+    try:
+        resultado = telegram.enviar_prueba()
+    finally:
+        telegram.registrar_persistencia(None)
+    assert resultado["ok"] is True
+    assert registros == [("prueba", True, 9)]
+
+
+def test_envio_rechazado_tambien_deja_rastro(monkeypatch):
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_TOKEN", "1:x")
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_CHAT_ID", "7")
+    monkeypatch.setattr(
+        telegram.requests, "post",
+        lambda *a, **k: _RespuestaFalsa(401, {"ok": False}),
+    )
+    registros: list[tuple] = []
+    telegram.registrar_persistencia(lambda tipo, ok, mid: registros.append((tipo, ok, mid)))
+    try:
+        resultado = telegram.enviar_prueba()
+    finally:
+        telegram.registrar_persistencia(None)
+    assert resultado["ok"] is False
+    assert registros == [("prueba", False, None)]
+
+
+def test_envio_inmediato_confirma_los_ids_del_lote(monkeypatch):
+    """Al confirmarse el envío, las predicciones que viajaron se marcan."""
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_TOKEN", "1:x")
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_CHAT_ID", "7")
+    monkeypatch.setattr(
+        telegram.requests, "post",
+        lambda *a, **k: _RespuestaFalsa(200, {"ok": True, "result": {"message_id": 11}}),
+    )
+    monkeypatch.setattr(telegram, "_asegurar_hilo", lambda: None)
+    confirmados: list[list[int]] = []
+    telegram.registrar_confirmados(lambda ids: confirmados.append(list(ids)))
+
+    estado = telegram.notificar(_resultado(), id_prediccion=77)
+    assert estado["estado"] == "enviado"
+    assert confirmados == [[77]]
+
+
+def test_agrupada_no_confirma_hasta_el_volcado(monkeypatch):
+    """Estar en la cola no es haber enviado: el id se confirma al volcar."""
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_TOKEN", "1:x")
+    monkeypatch.setenv("REDCENTINELA_TELEGRAM_CHAT_ID", "7")
+    monkeypatch.setattr(
+        telegram.requests, "post",
+        lambda *a, **k: _RespuestaFalsa(200, {"ok": True, "result": {"message_id": 12}}),
+    )
+    monkeypatch.setattr(telegram, "_asegurar_hilo", lambda: None)
+    confirmados: list[list[int]] = []
+    telegram.registrar_confirmados(lambda ids: confirmados.append(list(ids)))
+
+    telegram._ultimo_envio = telegram.time.monotonic()  # ventana abierta desde ya
+    telegram.notificar(_resultado(), id_prediccion=10)
+    estado = telegram.notificar(_resultado(), id_prediccion=11)
+    assert estado["estado"] == "agrupada"
+    assert confirmados == []  # nada confirmado todavía
+
+    telegram._volcar()
+    assert confirmados == [[10, 11]]
 
 
 def test_agrupacion_envia_la_primera_de_inmediato(monkeypatch):

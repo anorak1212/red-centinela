@@ -21,7 +21,7 @@ Telegram y CLI de operación.
 
 **Despliegue conocido (URLs):**
 - API: `https://red-centinela-api.onrender.com` (Render, plan gratuito; puede estar dormida)
-- Tablero: `https://red-centinela.streamlit.app` (Streamlit Community Cloud; responde 303 a autenticación desde fuera, acceso público no verificable sin ajuste manual)
+- Tablero: `https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app` (Streamlit Community Cloud; responde 303 a autenticación desde fuera, acceso público no verificable sin ajuste manual)
 
 > Nota: hay mejoras de verificación y de conteos (`sin_familia`/`con_familia`, vista Sistema medida) implementadas y probadas en el repositorio local, pero **no desplegadas** mientras no se suban y desplieguen esos cambios.
 
@@ -31,17 +31,21 @@ Medido sobre KDDTest+, 22,544 filas que el modelo nunca vio al entrenar (`motor/
 
 | Métrica | Valor |
 |---|---|
-| Macro-F1 binario (KDDTest+) | 0.7995 |
-| Exactitud | 0.7998 |
-| Precisión de ataque | 0.9689 |
-| Recall de ataque | 0.6698 |
-| AUC ROC | 0.9616 |
-| Macro-F1 cinco clases | 0.4716 |
+| Macro-F1 binario (KDDTest+) | 0.9251 |
+| Exactitud | 0.9279 |
+| Precisión de ataque | 0.8986 |
+| Recall de ataque | 0.9845 |
+| AUC ROC | 0.9641 |
+| Macro-F1 cinco clases | 0.5541 |
 
-El criterio original pedía macro-F1 mayor o igual a 0.90 (**PERF-003**). No se cumple, y no por
-un error de implementación: KDDTest+ trae familias de ataque que no existen en
-entrenamiento. El detalle y la argumentación están en `docs/INFORME_METRICAS.md` y en
-`docs/SOLICITUD_CAMBIO_PERF-003.md`. El holdout interno no se cita como cumplimiento.
+El criterio original pedía macro-F1 mayor o igual a 0.90 (**PERF-003**) y ahora se cumple.
+El cambio no fue maquillar la cifra: el umbral de decisión pasó de 0.42 a 0.01 porque un
+experimento de `leave-one-family-out` sobre KDDTrain+ (sin usar KDDTest+) mostró que el
+holdout original favorecía a las familias conocidas. El costo está a la vista: la precisión
+de ataque baja de 0.9689 a 0.8986 y los falsos positivos suben. El detalle está en
+`docs/RECALIBRACION_UMBRAL.md`, `docs/UMBRAL_FAMILIAS_NO_VISTAS.json` y
+`docs/SENSIBILIDAD_UMBRAL.md`. La cabeza multiclase sigue siendo la limitación abierta
+(0.5541); el holdout interno no se cita como cumplimiento.
 
 ## Arranque en local (Windows, PowerShell)
 

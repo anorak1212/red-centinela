@@ -93,6 +93,23 @@ def test_marcar_alerta_no_falla_con_id_inexistente():
     db.marcar_alerta(999_999, True)  # no debe lanzar
 
 
+def test_registrar_envio_y_resumen_alertas():
+    """Los envíos confirmados se cuentan desde la base, no desde la memoria."""
+    db.init_db()
+    antes = db.resumen_alertas()
+    db.registrar_envio("prueba", True, "101")
+    db.registrar_envio("deteccion", False)
+    despues = db.resumen_alertas()
+    assert despues["enviados"] == antes["enviados"] + 1
+    assert despues["fallidos"] == antes["fallidos"] + 1
+    assert despues["ultimo_envio_exitoso"] is not None
+
+
+def test_registrar_envio_no_rompe_con_message_id_nulo():
+    db.init_db()
+    db.registrar_envio("deteccion", False, None)  # no debe lanzar
+
+
 def test_almacen_local_es_sqlite(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     assert db.motor() == "sqlite"

@@ -1,0 +1,218 @@
+{
+  "generado": "2026-11-12T15:05:47-0600",
+  "segundos_total": 998.8,
+  "resultados_cv": [
+    {
+      "nombre": "smote_suave_reforzado",
+      "folds": [
+        {
+          "umbral": 0.48,
+          "macro_f1_binario_val": 0.9988991857822993,
+          "macro_f1_multiclase_val": 0.9002120279676878,
+          "recall_r2l_clasif": 0.9487951807228916,
+          "recall_u2r_clasif": 0.5882352941176471,
+          "recall_r2l_det": 0.963855421686747,
+          "recall_u2r_det": 0.6470588235294118,
+          "filas_train_fold": 86784
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1_binario_val": 0.9990907401921807,
+          "macro_f1_multiclase_val": 0.9695783538590271,
+          "recall_r2l_clasif": 0.9758308157099698,
+          "recall_u2r_clasif": 0.8235294117647058,
+          "recall_r2l_det": 0.9909365558912386,
+          "recall_u2r_det": 0.9411764705882353,
+          "filas_train_fold": 86783
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1_binario_val": 0.9990906680383151,
+          "macro_f1_multiclase_val": 0.9334723016670381,
+          "recall_r2l_clasif": 0.9879518072289156,
+          "recall_u2r_clasif": 0.6111111111111112,
+          "recall_r2l_det": 0.9909638554216867,
+          "recall_u2r_det": 0.8888888888888888,
+          "filas_train_fold": 86785
+        }
+      ],
+      "macro_f1_binario_val": 0.9990268646709316,
+      "macro_f1_multiclase_val": 0.9344208944979178,
+      "recall_r2l_clasif": 0.970859267887259,
+      "recall_u2r_clasif": 0.6742919389978214,
+      "recall_r2l_det": 0.9819186109998909,
+      "recall_u2r_det": 0.8257080610021786,
+      "umbral_sugerido": 0.44
+    },
+    {
+      "nombre": "cw_reforzado",
+      "folds": [
+        {
+          "umbral": 0.37,
+          "macro_f1_binario_val": 0.9988513930111405,
+          "macro_f1_multiclase_val": 0.8933837017414747,
+          "recall_r2l_clasif": 0.9548192771084337,
+          "recall_u2r_clasif": 0.47058823529411764,
+          "recall_r2l_det": 0.9698795180722891,
+          "recall_u2r_det": 0.5294117647058824,
+          "filas_train_fold": 83982
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1_binario_val": 0.9990428591668298,
+          "macro_f1_multiclase_val": 0.9614608431859974,
+          "recall_r2l_clasif": 0.9667673716012085,
+          "recall_u2r_clasif": 0.7647058823529411,
+          "recall_r2l_det": 0.9818731117824774,
+          "recall_u2r_det": 0.7647058823529411,
+          "filas_train_fold": 83982
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1_binario_val": 0.9991624490571194,
+          "macro_f1_multiclase_val": 0.9340019450028081,
+          "recall_r2l_clasif": 0.9789156626506024,
+          "recall_u2r_clasif": 0.5555555555555556,
+          "recall_r2l_det": 0.9849397590361446,
+          "recall_u2r_det": 0.7777777777777778,
+          "filas_train_fold": 83982
+        }
+      ],
+      "macro_f1_binario_val": 0.9990189004116964,
+      "macro_f1_multiclase_val": 0.9296154966434268,
+      "recall_r2l_clasif": 0.9668341037867482,
+      "recall_u2r_clasif": 0.5969498910675382,
+      "recall_r2l_det": 0.9788974629636371,
+      "recall_u2r_det": 0.690631808278867,
+      "umbral_sugerido": 0.4
+    },
+    {
+      "nombre": "smote_suave_cw",
+      "folds": [
+        {
+          "umbral": 0.48,
+          "macro_f1_binario_val": 0.9988991857822993,
+          "macro_f1_multiclase_val": 0.8982496404377927,
+          "recall_r2l_clasif": 0.9397590361445783,
+          "recall_u2r_clasif": 0.5294117647058824,
+          "recall_r2l_det": 0.963855421686747,
+          "recall_u2r_det": 0.6470588235294118,
+          "filas_train_fold": 86784
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1_binario_val": 0.9990907401921807,
+          "macro_f1_multiclase_val": 0.9734791038105826,
+          "recall_r2l_clasif": 0.9577039274924471,
+          "recall_u2r_clasif": 0.8235294117647058,
+          "recall_r2l_det": 0.9909365558912386,
+          "recall_u2r_det": 0.9411764705882353,
+          "filas_train_fold": 86783
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1_binario_val": 0.9990906680383151,
+          "macro_f1_multiclase_val": 0.8991003465792973,
+          "recall_r2l_clasif": 0.9698795180722891,
+          "recall_u2r_clasif": 0.3888888888888889,
+          "recall_r2l_det": 0.9909638554216867,
+          "recall_u2r_det": 0.8888888888888888,
+          "filas_train_fold": 86785
+        }
+      ],
+      "macro_f1_binario_val": 0.9990268646709316,
+      "macro_f1_multiclase_val": 0.9236096969425575,
+      "recall_r2l_clasif": 0.9557808272364382,
+      "recall_u2r_clasif": 0.5806100217864923,
+      "recall_r2l_det": 0.9819186109998909,
+      "recall_u2r_det": 0.8257080610021786,
+      "umbral_sugerido": 0.44
+    },
+    {
+      "nombre": "smote_medio_reforzado",
+      "folds": [
+        {
+          "umbral": 0.38,
+          "macro_f1_binario_val": 0.9984925379860174,
+          "macro_f1_multiclase_val": 0.9033714385864473,
+          "recall_r2l_clasif": 0.9427710843373494,
+          "recall_u2r_clasif": 0.7647058823529411,
+          "recall_r2l_det": 0.9668674698795181,
+          "recall_u2r_det": 0.8235294117647058,
+          "filas_train_fold": 90284
+        },
+        {
+          "umbral": 0.45,
+          "macro_f1_binario_val": 0.9985882684460485,
+          "macro_f1_multiclase_val": 0.9349300159584695,
+          "recall_r2l_clasif": 0.9848942598187311,
+          "recall_u2r_clasif": 0.9411764705882353,
+          "recall_r2l_det": 0.9848942598187311,
+          "recall_u2r_det": 0.8235294117647058,
+          "filas_train_fold": 90283
+        },
+        {
+          "umbral": 0.51,
+          "macro_f1_binario_val": 0.9986359339497268,
+          "macro_f1_multiclase_val": 0.9231365761532352,
+          "recall_r2l_clasif": 0.9909638554216867,
+          "recall_u2r_clasif": 0.7777777777777778,
+          "recall_r2l_det": 0.9789156626506024,
+          "recall_u2r_det": 0.7777777777777778,
+          "filas_train_fold": 90285
+        }
+      ],
+      "macro_f1_binario_val": 0.998572246793931,
+      "macro_f1_multiclase_val": 0.9204793435660507,
+      "recall_r2l_clasif": 0.9728763998592558,
+      "recall_u2r_clasif": 0.8278867102396514,
+      "recall_r2l_det": 0.9768924641162838,
+      "recall_u2r_det": 0.8082788671023965,
+      "umbral_sugerido": 0.45
+    },
+    {
+      "nombre": "baseline_actual",
+      "folds": [
+        {
+          "umbral": 0.37,
+          "macro_f1_binario_val": 0.9988513930111405,
+          "macro_f1_multiclase_val": 0.8830044856929318,
+          "recall_r2l_clasif": 0.9216867469879518,
+          "recall_u2r_clasif": 0.35294117647058826,
+          "recall_r2l_det": 0.9698795180722891,
+          "recall_u2r_det": 0.5294117647058824,
+          "filas_train_fold": 83982
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1_binario_val": 0.9990428591668298,
+          "macro_f1_multiclase_val": 0.9495924897146697,
+          "recall_r2l_clasif": 0.9516616314199395,
+          "recall_u2r_clasif": 0.6470588235294118,
+          "recall_r2l_det": 0.9818731117824774,
+          "recall_u2r_det": 0.7647058823529411,
+          "filas_train_fold": 83982
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1_binario_val": 0.9991624490571194,
+          "macro_f1_multiclase_val": 0.878722748349676,
+          "recall_r2l_clasif": 0.9668674698795181,
+          "recall_u2r_clasif": 0.2777777777777778,
+          "recall_r2l_det": 0.9849397590361446,
+          "recall_u2r_det": 0.7777777777777778,
+          "filas_train_fold": 83982
+        }
+      ],
+      "macro_f1_binario_val": 0.9990189004116964,
+      "macro_f1_multiclase_val": 0.9037732412524259,
+      "recall_r2l_clasif": 0.9467386160958031,
+      "recall_u2r_clasif": 0.4259259259259259,
+      "recall_r2l_det": 0.9788974629636371,
+      "recall_u2r_det": 0.690631808278867,
+      "umbral_sugerido": 0.4
+    }
+  ],
+  "elegido": "smote_suave_reforzado",
+  "nota": "KDDTest+ no usado. Ejecutar una sola vez: python -m motor.evaluate"
+}

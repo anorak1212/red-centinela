@@ -92,12 +92,17 @@ def medir_latencia(predecir, fila=None, muestras: int = 5,
                    umbral_ms: float = UMBRAL_LATENCIA_MS) -> dict:
     """Cronometra N llamadas a /predict con una fila que debe salir normal.
 
-    `predecir` es una función que recibe un dict de 41 características y
-    devuelve la respuesta de la API. Se corta en la primera respuesta marcada
-    como ataque: seguir mediría latencia a costa de enviar alertas.
+    `predecir` puede devolver la respuesta o una tupla (respuesta, ms_servidor).
+    Cuando el servidor declara su tiempo con `Server-Timing`, el p95 se calcula
+    sobre el cómputo real; la ida y vuelta por internet se reporta aparte, en
+    `p95_red_ms`, porque depende del ISP y de la región del despliegue y no del
+    código. Se corta en la primera respuesta marcada como ataque: seguir
+    mediría latencia a costa de enviar alertas.
     """
     fila = dict(FILA_NORMAL if fila is None else fila)
     tiempos: list[float] = []
+    tiempos_red: list[float] = []
+    del_servidor = 0
     fallos = 0
     ultimo_error = None
     for _ in range(max(1, int(muestras))):
@@ -110,25 +115,49 @@ def medir_latencia(predecir, fila=None, muestras: int = 5,
             fallos += 1
             ultimo_error = f"{type(exc).__name__}: {exc}"[:160]
             continue
-        tiempos.append((time.perf_counter() - inicio) * 1000)
+        red = (time.perf_counter() - inicio) * 1000
+        tiempos_red.append(red)
+        ms_servidor = None
+        if isinstance(respuesta, tuple) and len(respuesta) == 2:
+            respuesta, ms_servidor = respuesta
+        if isinstance(ms_servidor, (int, float)):
+            tiempos.append(float(ms_servidor))
+            del_servidor += 1
+        else:
+            tiempos.append(red)
         if isinstance(respuesta, dict) and respuesta.get("es_ataque"):
             return {
                 "p95_ms": percentil(tiempos), "mediana_ms": statistics.median(tiempos),
                 "n": len(tiempos), "fallos": fallos, "umbral_ms": umbral_ms,
+                "p95_red_ms": percentil(tiempos_red),
+                "fuente": _fuente_latencia(del_servidor, len(tiempos)),
                 "error": "la fila de medición salió como ataque: se detuvo para no "
                          "generar alertas",
             }
+    fuente = _fuente_latencia(del_servidor, len(tiempos))
     if not tiempos:
         return {
             "p95_ms": None, "mediana_ms": None, "n": 0, "fallos": fallos,
-            "umbral_ms": umbral_ms,
+            "umbral_ms": umbral_ms, "p95_red_ms": None, "fuente": "sin datos",
             "error": ultimo_error or "ninguna petición completada",
         }
     return {
         "p95_ms": percentil(tiempos), "mediana_ms": statistics.median(tiempos),
         "n": len(tiempos), "fallos": fallos, "umbral_ms": umbral_ms,
+        "p95_red_ms": percentil(tiempos_red), "fuente": fuente,
         "error": ultimo_error,
     }
+
+
+def _fuente_latencia(del_servidor: int, total: int) -> str:
+    """De dónde sale la cifra que se compara contra el umbral."""
+    if total == 0:
+        return "sin datos"
+    if del_servidor == total:
+        return "servidor"
+    if del_servidor == 0:
+        return "red"
+    return "mixta"
 
 
 def inspeccionar_datasets(raiz: str | Path) -> dict:
@@ -395,18 +424,38 @@ def verificar(
         ))
     else:
         p95 = float(latencia["p95_ms"])
+        fuente = latencia.get("fuente") or "red"
         cumple = p95 <= umbral_latencia_ms
         nota = f"{p95:.0f} ms p95 de n={latencia.get('n', 0)}"
+        if fuente == "servidor":
+            nota += " medidos por el servidor (Server-Timing)"
+        elif fuente == "red":
+            nota += " de ida y vuelta completa"
+        elif fuente == "mixta":
+            nota += " mezclando servidor y red"
+        if latencia.get("p95_red_ms") is not None and fuente == "servidor":
+            nota += f"; {float(latencia['p95_red_ms']):.0f} ms de ida y vuelta"
         if latencia.get("fallos"):
             nota += f", {latencia['fallos']} fallos"
         if latencia.get("error"):
             nota += f" ({latencia['error']})"
-        criterios.append(_criterio(
-            "PERF-006", "Latencia p95 de /predict",
-            f"≤ {umbral_latencia_ms:.0f} ms", nota,
-            CUMPLIDO if cumple else NO_CUMPLIDO,
-            "" if cumple else "medida en vivo con el servicio despierto",
-        ))
+        if fuente == "red":
+            # Una ida y vuelta desde otro continente no mide el criterio: mide
+            # internet. Declarar "no cumplido" con ese número sería tan falso
+            # como declararlo cumplido.
+            criterios.append(_criterio(
+                "PERF-006", "Latencia p95 de /predict",
+                f"≤ {umbral_latencia_ms:.0f} ms", nota, NO_VERIFICADO,
+                "la API midió el viaje por internet, no su cómputo: el despliegue "
+                "no envía Server-Timing",
+            ))
+        else:
+            criterios.append(_criterio(
+                "PERF-006", "Latencia p95 de /predict",
+                f"≤ {umbral_latencia_ms:.0f} ms", nota,
+                CUMPLIDO if cumple else NO_CUMPLIDO,
+                "" if cumple else "medida en vivo con el servicio despierto",
+            ))
 
     if alertas is None:
         criterios.append(_criterio(

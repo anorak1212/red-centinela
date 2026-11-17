@@ -45,9 +45,11 @@ def _alertas(enviados: int = 1, configurado: bool = True) -> dict:
     }
 
 
-def _latencia(p95: float = 150.0, n: int = 5, error: str | None = None) -> dict:
+def _latencia(p95: float = 150.0, n: int = 5, error: str | None = None,
+              fuente: str = "servidor") -> dict:
     return {"p95_ms": p95, "mediana_ms": p95, "n": n, "fallos": 0,
-            "umbral_ms": 200.0, "error": error}
+            "umbral_ms": 200.0, "error": error, "fuente": fuente,
+            "p95_red_ms": 700.0 if fuente == "servidor" else None}
 
 
 def _tablero(codigo: int = 200, destino: str | None = None) -> dict:
@@ -116,6 +118,29 @@ def test_medir_latencia_cuenta_muestras_y_mide(monkeypatch):
     assert resultado["n"] == 3
     assert resultado["p95_ms"] == pytest.approx(300.0)
     assert resultado["error"] is None
+
+
+def test_medir_latencia_usa_el_tiempo_del_servidor_si_existe(monkeypatch):
+    """Con Server-Timing, el p95 mide cómputo y la red queda aparte."""
+    reloj = iter([0.0, 0.9, 0.9, 1.8, 1.8, 2.7])
+    monkeypatch.setattr(verificacion.time, "perf_counter", lambda: next(reloj))
+
+    def predecir(fila):
+        return {"es_ataque": False}, 10.0
+
+    resultado = verificacion.medir_latencia(predecir, muestras=3)
+    assert resultado["n"] == 3
+    assert resultado["p95_ms"] == pytest.approx(10.0)
+    assert resultado["p95_red_ms"] == pytest.approx(900.0)
+    assert resultado["fuente"] == "servidor"
+
+
+def test_medir_latencia_sin_cabecera_reporta_la_red():
+    resultado = verificacion.medir_latencia(
+        lambda fila: {"es_ataque": False}, muestras=2
+    )
+    assert resultado["fuente"] == "red"
+    assert resultado["p95_red_ms"] is not None
 
 
 def test_medir_latencia_aborta_si_la_fila_sale_ataque():
@@ -246,6 +271,22 @@ def test_latencia_sobre_la_meta_no_cumple():
     perf = _criterio(veredicto, "PERF-006")
     assert perf["estado"] == verificacion.NO_CUMPLIDO
     assert "254" in perf["medido"]
+
+
+def test_latencia_medida_por_la_red_no_afirma_cumplimiento():
+    """Sin Server-Timing, la cifra incluye internet y no mide el criterio."""
+    veredicto = _verificar(latencia=_latencia(180.0, fuente="red"))
+    perf = _criterio(veredicto, "PERF-006")
+    assert perf["estado"] == verificacion.NO_VERIFICADO
+    assert "Server-Timing" in perf["motivo"]
+
+
+def test_latencia_del_servidor_bajo_la_meta_cumple():
+    veredicto = _verificar(latencia=_latencia(19.0))
+    perf = _criterio(veredicto, "PERF-006")
+    assert perf["estado"] == verificacion.CUMPLIDO
+    assert "servidor" in perf["medido"].lower()
+    assert "ida y vuelta" in perf["medido"]
 
 
 def test_repositorio_incompleto_es_falla_en_m1():

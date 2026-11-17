@@ -124,7 +124,8 @@ def render() -> None:
                     "Umbral",
                     (
                         "Probabilidad a partir de la cual se declara ataque. Se calibró "
-                        "sobre el holdout del entrenamiento: 0.41."
+                        "sobre el holdout del entrenamiento; el valor vigente es el que "
+                        "publica /health como umbral_decision."
                     ),
                 ),
                 (

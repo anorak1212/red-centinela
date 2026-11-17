@@ -28,7 +28,7 @@ ENDPOINTS = [
     ("POST", "/predict/batch", "hasta 500 filas por petición"),
     ("POST", "/alertas/prueba", "mensaje de prueba al chat configurado"),
 ]
-MUESTRAS_LATENCIA = 5
+MUESTRAS_LATENCIA = 10
 ESPERA_ARRANQUE = 45
 CLAVE = "verificacion_sistema"
 TONO = {verificacion.OPERANDO: "ok", verificacion.FALLA: "mal",
@@ -81,7 +81,16 @@ def _medir(api: str, tablero_url: str, muestras: int) -> dict:
 
     latencia = None
     if salud is not None and salud.get("modelos_disponibles") and muestras > 0:
-        latencia = verificacion.medir_latencia(client.predecir, muestras=muestras)
+        # Calentamiento: la primera predicción tras un arranque en frío carga el
+        # .joblib y no representa la latencia de régimen. Se descarta y se mide
+        # sobre el modelo ya en memoria.
+        try:
+            client.predecir(verificacion.FILA_NORMAL)
+        except client.ApiError:
+            pass
+        # `predecir_medido` devuelve además el tiempo que el servidor declara en
+        # Server-Timing, para separar el cómputo del viaje por internet.
+        latencia = verificacion.medir_latencia(client.predecir_medido, muestras=muestras)
 
     veredicto = verificacion.verificar(
         api_url=api,

@@ -40,10 +40,43 @@ _estado = {
     "agrupados": 0,
 }
 
-_pendientes: list[str] = []
+_pendientes: list[dict] = []
 _lock = threading.Lock()
 _ultimo_envio = 0.0
 _hilo: threading.Thread | None = None
+_on_envio = None  # gancho opcional: (tipo, ok, message_id) -> None
+_on_confirmados = None  # gancho opcional: (ids_prediccion) -> None
+
+
+def registrar_persistencia(gancho) -> None:
+    """Registra cómo guardar cada intento real de envío.
+
+    La API pasa aquí su función de persistencia, de modo que el contador de
+    alertas sobreviva a los reinicios del servicio. El módulo de alertas no
+    importa la base de datos: solo llama al gancho.
+    """
+    global _on_envio
+    _on_envio = gancho
+
+
+def registrar_confirmados(gancho) -> None:
+    """Registra qué hacer cuando un lote se envía de verdad.
+
+    Recibe los ids de las predicciones que viajaron en el mensaje agrupado, para
+    que el historial marque esas filas como alertadas aunque el envío haya
+    ocurrido después del request que las originó.
+    """
+    global _on_confirmados
+    _on_confirmados = gancho
+
+
+def _persistir(tipo: str, resultado: dict) -> None:
+    if _on_envio is None:
+        return
+    try:
+        _on_envio(tipo, bool(resultado.get("ok")), resultado.get("message_id"))
+    except Exception:  # noqa: BLE001, S110 - la telemetría no rompe el envío
+        pass
 
 
 # --------------------------------------------------------------------------
@@ -74,8 +107,8 @@ def estado() -> dict:
 # --------------------------------------------------------------------------
 # Envío
 # --------------------------------------------------------------------------
-def _enviar_ahora(texto: str) -> dict:
-    """Hace la petición al Bot API. Devuelve el resultado real."""
+def _enviar_ahora(texto: str, tipo: str = "deteccion") -> dict:
+    """Hace la petición al Bot API. Devuelve el resultado real y lo persiste."""
     token, chat = _credenciales()
     if not (token and chat):
         return {"ok": False, "estado": "no configurado",
@@ -101,7 +134,10 @@ def _enviar_ahora(texto: str) -> dict:
             # registra solo el tipo de error.
             _estado["ultimo_error"] = type(exc).__name__
             _estado["fallidos"] += 1
-            return {"ok": False, "estado": "error de red", "detalle": type(exc).__name__}
+            resultado = {"ok": False, "estado": "error de red",
+                         "detalle": type(exc).__name__}
+            _persistir(tipo, resultado)
+            return resultado
 
     try:
         cuerpo = r.json()
@@ -110,13 +146,18 @@ def _enviar_ahora(texto: str) -> dict:
     if r.status_code == 200 and cuerpo.get("ok") is True:
         _estado["ultimo_envio_exitoso"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         _estado["enviados"] += 1
-        return {"ok": True, "estado": "enviado",
-                "message_id": cuerpo.get("result", {}).get("message_id")}
+        resultado = {"ok": True, "estado": "enviado",
+                     "message_id": cuerpo.get("result", {}).get("message_id")}
+        _persistir(tipo, resultado)
+        return resultado
 
     _estado["fallidos"] += 1
     _estado["ultimo_error"] = f"HTTP {r.status_code}: {cuerpo.get('description', '')}"
-    return {"ok": False, "estado": "rechazado",
-            "detalle": f"HTTP {r.status_code}", "descripcion": cuerpo.get("description", "")}
+    resultado = {"ok": False, "estado": "rechazado",
+                 "detalle": f"HTTP {r.status_code}",
+                 "descripcion": cuerpo.get("description", "")}
+    _persistir(tipo, resultado)
+    return resultado
 
 
 def _volcar() -> dict:
@@ -126,13 +167,21 @@ def _volcar() -> dict:
         if not _pendientes:
             return {"ok": True, "estado": "sin pendientes", "enviados": 0}
         lote = _pendientes[:MAX_PENDIENTES]
-        mensaje = "\n".join(lote)
+        mensaje = "\n".join(item["texto"] for item in lote)
     resultado = _enviar_ahora(mensaje)
     if resultado.get("ok"):
         with _lock:
             del _pendientes[:len(lote)]
         _ultimo_envio = time.monotonic()
         resultado["agrupadas_en_el_lote"] = len(lote)
+        resultado["ids_confirmados"] = [
+            item["id"] for item in lote if item.get("id") is not None
+        ]
+        if _on_confirmados is not None and resultado["ids_confirmados"]:
+            try:
+                _on_confirmados(resultado["ids_confirmados"])
+            except Exception:  # noqa: BLE001, S110 - el marcado no rompe el envío
+                pass
     return resultado
 
 
@@ -172,18 +221,19 @@ def formatear(resultado: dict) -> str:
     )
 
 
-def notificar(resultado: dict) -> dict:
+def notificar(resultado: dict, id_prediccion: int | None = None) -> dict:
     """Registra una detección para envío agrupado.
 
     Devuelve el estado inmediato. "agrupada" no significa entregada: significa
-    que quedó en la ventana de 10 s. La entrega se confirma en `_volcar`.
+    que quedó en la ventana de 10 s. La entrega se confirma en `_volcar`, y el
+    id viaja con el mensaje para poder marcar la fila correcta al confirmar.
     """
     if not configurado():
         return {"ok": False, "estado": "no configurado",
                 "detalle": "alertas no configuradas"}
     _asegurar_hilo()
     with _lock:
-        _pendientes.append(formatear(resultado))
+        _pendientes.append({"texto": formatear(resultado), "id": id_prediccion})
         if len(_pendientes) > MAX_PENDIENTES:
             del _pendientes[: len(_pendientes) - MAX_PENDIENTES]
     _estado["agrupados"] += 1
@@ -198,7 +248,8 @@ def enviar_prueba() -> dict:
     return _enviar_ahora(
         "RED CENTINELA | mensaje de prueba\n"
         "Si lees esto, el bot y el chat están configurados correctamente.\n"
-        f"Hora: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        f"Hora: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        tipo="prueba",
     )
 
 

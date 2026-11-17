@@ -88,7 +88,8 @@ def render() -> None:
             (f"{len(vista):,}", "Registros", "tras aplicar los filtros"),
             (f"{ataques:,}", "Ataques", "es_ataque = verdadero"),
             (f"{100 * ataques / max(1, len(vista)):.1f} %", "Tasa de ataque", "del conjunto filtrado"),
-            (f"{confirmadas:,}", "Alertas enviadas", "confirmadas por Telegram"),
+            (f"{confirmadas:,}", "Con notificación",
+             "marcadas por la API; el envío real se confirma en /alertas/estado"),
             (f"{vista['clase'].nunique()}", "Clases distintas", ", ".join(sorted(vista["clase"].unique()))),
         ],
     )

@@ -15,8 +15,9 @@ from tablero.ui import estilos, preferencias
 PASOS = [
     ("resumen", "El servicio está vivo y se mide",
      "Muestra la portada y el panorama del modelo.",
-     ("El macro-F1 es 0.7995 frente a una meta de 0.90. Se mide sobre 22,544 filas que el "
-     "modelo nunca vio, y no se ajustó contra ellas.")),
+     ("El macro-F1 es 0.9251 frente a una meta de 0.90. Se mide sobre 22,544 filas que el "
+     "modelo nunca vio. El umbral se recalibró con validación de familias no vistas, "
+     "sin ajustar contra ese conjunto.")),
     ("analizar", "Una conexión, una decisión",
      "Elige la fila DoS y pulsa Predecir. Luego repite con la fila R2L.",
      ("DoS se detecta con claridad. R2L muestra el límite real del modelo, y se dice antes de "

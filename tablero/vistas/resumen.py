@@ -152,8 +152,11 @@ def _panorama(metricas: dict) -> None:
                 st.caption("sin datos")
             else:
                 st.altair_chart(graficas.medidor(float(valor), titulo, meta), width="stretch")
-    estilos.fuente("Macro-F1 es el criterio PERF-003 (meta 0.90, no cumplida). Las otras tres "
-                   "no tienen meta fijada en el proyecto.")
+    macro_publicado = binario.get("macro_f1")
+    estado_meta = ("cumplida" if macro_publicado is not None
+                   and float(macro_publicado) >= 0.90 else "no cumplida")
+    estilos.fuente(f"Macro-F1 es el criterio PERF-003 (meta 0.90, {estado_meta}). Las "
+                   "otras tres no tienen meta fijada en el proyecto.")
     _indicadores(metricas)
 
     izquierda, derecha = st.columns([3, 2], gap="large")
@@ -323,11 +326,17 @@ def reporte_markdown(api: str, estado: dict, metricas: dict, resumen: dict) -> s
         "| ALERT-010 | mensaje confirmado en Telegram | sin token ni chat_id | no evidenciado |",
         "| DEPLOY-013 | URL pública | sin cuentas | pendiente |",
         "",
-        ("El modelo no se ajustó contra KDDTest+. El umbral se calibró sobre un holdout "
-        "interno. La solicitud de cambio de PERF-003 está en "
-        "`docs/SOLICITUD_CAMBIO_PERF-003.md`."),
-        "",
+        ("El modelo no se ajustó contra KDDTest+. El umbral se recalibró con "
+        "`leave-one-family-out` sobre KDDTrain+, sin usar KDDTest+; el protocolo y "
+        "sus cifras están en `docs/UMBRAL_FAMILIAS_NO_VISTAS.json`."),
     ]
+    if not cumple:
+        lineas += [
+            "",
+            ("La métrica queda por debajo de la meta; la solicitud de cambio de "
+             "PERF-003 está en `docs/SOLICITUD_CAMBIO_PERF-003.md`."),
+        ]
+    lineas += [""]
     return "\n".join(lineas)
 
 
@@ -524,18 +533,25 @@ def _bloque_rendimiento(macro_f1, binario: dict) -> None:
         st.info("La API no publicó métricas del modelo.")
         return
     valor = float(macro_f1)
+    precision = float(binario.get("precision_ataque", 0))
+    recall = float(binario.get("recall_ataque", 0))
     st.progress(min(1.0, max(0.0, valor)),
                 text=f"Macro-F1 de {valor:.4f} frente a la meta de 0.9000")
     estilos.barras([
         ("Macro-F1 binario", valor, f"{valor:.4f}", "mal" if valor < 0.90 else "ok"),
-        ("Precisión de ataque", float(binario.get("precision_ataque", 0)),
-         f"{float(binario.get('precision_ataque', 0)):.4f}", "ok"),
-        ("Recall de ataque", float(binario.get("recall_ataque", 0)),
-         f"{float(binario.get('recall_ataque', 0)):.4f}", "medio"),
+        ("Precisión de ataque", precision, f"{precision:.4f}", "ok"),
+        ("Recall de ataque", recall, f"{recall:.4f}",
+         "ok" if recall >= 0.90 else ("medio" if recall >= 0.75 else "mal")),
         ("AUC ROC", float(binario.get("auc_roc", 0)),
          f"{float(binario.get('auc_roc', 0)):.4f}", "ok"),
     ])
-    if valor < 0.90:
+    if valor >= 0.90:
+        st.caption(
+            "Meta cubierta en la cabeza binaria tras recalibrar el umbral con "
+            "familias no vistas. El costo son más falsos positivos: precisión de "
+            f"{precision:.4f}. La cabeza multiclase sigue en el informe de métricas."
+        )
+    else:
         st.caption(
             "Meta no cumplida sobre KDDTest+. No se ajustó el modelo contra ese "
             "conjunto: la diferencia mide generalización, no un error de código. "

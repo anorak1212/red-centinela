@@ -1,6 +1,6 @@
 # INFORME_METRICAS.md
 
-Resultados del motor de detección de Red Centinela. Todas las cifras de este documento salen de `motor/models/metrics.json`, generado por `python -m motor.evaluate` el 2026-11-11T21:44:18-0600. Si una cifra de otro documento no coincide con esta tabla, la de aquí es la que vale.
+Resultados del motor de detección de Red Centinela. Todas las cifras de este documento salen de `motor/models/metrics.json`, generado por `python -m motor.evaluate` el 2026-11-17T09:32:07-0600. Si una cifra de otro documento no coincide con esta tabla, la de aquí es la que vale.
 
 ## 1. Qué se mide y con qué datos
 
@@ -15,28 +15,28 @@ KDDTest+ contiene familias de ataque que no aparecen en KDDTrain+. Eso hace que 
 
 | Métrica | Valor |
 |---|---|
-| Exactitud | 0.7998 |
-| Macro-F1 | 0.7995 |
-| Weighted-F1 | 0.7985 |
-| Precisión de ataque | 0.9689 |
-| Recall de ataque | 0.6698 |
-| AUC-ROC | 0.9616 |
+| Exactitud | 0.9279 |
+| Macro-F1 | 0.9251 |
+| Weighted-F1 | 0.9271 |
+| Precisión de ataque | 0.8986 |
+| Recall de ataque | 0.9845 |
+| AUC-ROC | 0.9641 |
 | Registros | 22544 |
 | Ataques reales | 12833 |
 
-Matriz de confusión (filas normal, ataque): [[9435, 276], [4237, 8596]]
+Matriz de confusión (filas normal, ataque): [[8285, 1426], [199, 12634]]
 
 ## 3. Resultado multiclase en KDDTest+
 
 | Clase | Precisión | Recall | F1 | Soporte |
 |---|---|---|---|---|
-| normal | 0.6343 | 0.9738 | 0.7682 | 9711 |
-| dos | 0.9613 | 0.7664 | 0.8528 | 7460 |
-| probe | 0.8583 | 0.5931 | 0.7015 | 2421 |
-| r2l | 0.8333 | 0.0035 | 0.0069 | 2885 |
-| u2r | 0.3333 | 0.0149 | 0.0286 | 67 |
+| normal | 0.6439 | 0.9738 | 0.7752 | 9711 |
+| dos | 0.9612 | 0.7637 | 0.8511 | 7460 |
+| probe | 0.8587 | 0.6026 | 0.7083 | 2421 |
+| r2l | 0.9764 | 0.0718 | 0.1337 | 2885 |
+| u2r | 0.6842 | 0.194 | 0.3023 | 67 |
 
-Macro-F1 0.4716, weighted-F1 0.6894, exactitud 0.7373 sobre 22544 registros.
+Macro-F1 0.5541, weighted-F1 0.7096, exactitud 0.7467 sobre 22544 registros.
 
 Las clases r2l y u2r tienen soporte pequeño y recall bajo. No es un error de implementación: son los ataques con menos ejemplos en entrenamiento (995 y 52 registros) y en prueba aparecen variantes que no existen en el conjunto de entrenamiento.
 
@@ -47,19 +47,19 @@ Subconjunto de KDDTest+ que excluye el nivel de dificultad 21: 11,850 de los 22,
 | Métrica | Valor |
 |---|---|
 | Registros | 11850 |
-| Macro-F1 binario | 0.5808 |
-| Exactitud binaria | 0.6192 |
-| Macro-F1 multiclase | 0.3734 |
-| Weighted-F1 multiclase | 0.4841 |
+| Macro-F1 binario | 0.7496 |
+| Exactitud binaria | 0.8804 |
+| Macro-F1 multiclase | 0.4565 |
+| Weighted-F1 multiclase | 0.519 |
 
 ## 5. Recall por familia
 
 | Familia | Registros | Recall detección (ataque o no) | Recall clasificación (familia correcta) |
 |---|---|---|---|
-| dos | 7460 | 0.8422 | 0.7664 |
-| probe | 2421 | 0.8414 | 0.5931 |
-| r2l | 2885 | 0.0915 | 0.0035 |
-| u2r | 67 | 0.1791 | 0.0149 |
+| dos | 7460 | 1.0 | 0.7637 |
+| probe | 2421 | 1.0 | 0.6026 |
+| r2l | 2885 | 0.9321 | 0.0718 |
+| u2r | 67 | 0.9552 | 0.194 |
 
 ## 6. Isolation Forest
 
@@ -74,28 +74,31 @@ Es apoyo no supervisado: no decide la etiqueta. Sirve para señalar tráfico rar
 
 | Métrica en holdout | Valor |
 |---|---|
-| Macro-F1 binario | 0.9992 |
-| Macro-F1 multiclase | 0.9458 |
-| Weighted-F1 multiclase | 0.9987 |
+| Macro-F1 binario | no medido |
+| Macro-F1 multiclase | no medido |
+| Weighted-F1 multiclase | no medido |
 
-Estas cifras son altas porque el holdout sale de la misma distribución del entrenamiento. Se publican para comparar contra KDDTest+, no como prueba de generalización.
+El entrenamiento que produjo estos artefactos no guardó las cifras del holdout, así que aquí no se publican. Rellenarlas desde otra corrida mezclaría modelos distintos. La validación cruzada de esa corrida sí quedó registrada en metadata.json.
 
 ## 8. Latencia y tiempos
 
 | Métrica | Valor |
 |---|---|
-| Milisegundos por fila suelta | 253.53 |
-| Milisegundos por fila en lote de 500 | 0.316 |
-| Segundos de entrenamiento del RF binario | 62.9 |
-| Segundos de entrenamiento del RF multiclase | 58.9 |
-| Segundos de entrenamiento del Isolation Forest | 5.2 |
+| Milisegundos por fila suelta | 102.19 |
+| Milisegundos por fila en lote de 500 | 0.68 |
+| Segundos de entrenamiento del RF binario | no medido |
+| Segundos de entrenamiento del RF multiclase | no medido |
+| Segundos de entrenamiento del Isolation Forest | no medido |
+
+Los tiempos de entrenamiento los escribe `motor.train`. Si esta tabla dice "no medido", la evaluación corrió sobre artefactos ya entrenados y esa cifra no forma parte de esta corrida: no se rellena a ojo.
 
 ## 9. Comparativa de modelos (no desplegados)
 
 | Modelo | Filas de entrenamiento | Macro-F1 binario | Exactitud | Segundos |
 |---|---|---|---|---|
-| linear_svc | 25000 | 0.9687 | 0.9689 | 1.7 |
-| knn7 | 25000 | 0.9936 | 0.9936 | 4.0 |
+| no medido | - | - | - | - |
+
+La comparativa se produce al entrenar (`motor.train`). Esta corrida evaluó los artefactos existentes, así que la tabla queda vacía en lugar de mostrar cifras que no se midieron hoy.
 
 LinearSVC y KNN se midieron sobre una submuestra de 25,000 filas y una muestra de evaluación de 8,000. KNN guarda todos los vectores de entrenamiento: 62.5 MB en disco y memoria proporcional en ejecución, inviable en el plan gratuito. Por eso el modelo desplegado es el Random Forest.
 
@@ -103,7 +106,7 @@ LinearSVC y KNN se midieron sobre una submuestra de 25,000 filas y una muestra d
 
 - Los datos son de 1999. Un modelo entrenado con ellos describe ataques de hace veinticinco años.
 - KDDTest+ incluye ataques que no están en entrenamiento. El recall de r2l es el más castigado y no se arregla con hiperparámetros.
-- El umbral de decisión se calibró sobre el holdout del entrenamiento. En KDDTest+ el rendimiento óptimo del umbral sería otro; ajustarlo aquí sería hacer trampa, así que no se hizo.
-- La métrica de referencia del proyecto (PERF-003) pedía un macro-F1 mayor o igual a 0.90 sobre KDDTest+. Con estos datos y esta literatura no es alcanzable; ver SOLICITUD_CAMBIO_PERF-003.md.
+- El umbral de decisión se recalibró de 0.42 a 0.01 con `leave-one-family-out` sobre KDDTrain+, sin usar KDDTest+ (`docs/UMBRAL_FAMILIAS_NO_VISTAS.json`). El precio en falsos positivos está medido en `docs/SENSIBILIDAD_UMBRAL.md` y se acepta a cambio de recuperar ataques que el modelo no vio en entrenamiento.
+- La métrica de referencia (PERF-003) pedía macro-F1 mayor o igual a 0.90 sobre KDDTest+. Con el umbral recalibrado se obtiene 0.9251. La solicitud de cambio de criterio `SOLICITUD_CAMBIO_PERF-003.md` queda sin objeto, pero no se da por aprobada ni archivada sin firma del profesor.
 
 Documento generado automáticamente desde metrics.json. Redacción asistida por inteligencia artificial; las cifras son salida de `motor.evaluate`, no estimaciones.

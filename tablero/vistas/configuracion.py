@@ -130,9 +130,9 @@ def _comportamiento() -> None:
             st.success("Caché vaciada: la próxima lectura va directo a la API.")
     estilos.bloque(
         "Lo que no se configura aquí.",
-        "El umbral de decisión (0.41), los nombres de los endpoints y las métricas son del "
-        "modelo y de la API, no del tablero. Para ver qué pasaría con otro umbral usa el "
-        "simulador de la vista Historial.",
+        "El umbral de decisión (lo publica /health como umbral_decision), los nombres "
+        "de los endpoints y las métricas son del modelo y de la API, no del tablero. "
+        "Para ver qué pasaría con otro umbral usa el simulador de la vista Historial.",
     )
 
 

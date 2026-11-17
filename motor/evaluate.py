@@ -157,6 +157,7 @@ def main() -> None:
             "nombre": "RandomForest",
             "cabezas": ["binaria normal/ataque", "multiclase de 5 clases"],
             "umbral_decision": umbral,
+            "umbral_decision_anterior": md.get("umbral_decision_anterior"),
             "clases": CLASSES,
             "verificacion_integridad": modelos["manifiesto"]["ok"],
         },
@@ -171,15 +172,16 @@ def main() -> None:
                     "no decide la etiqueta, ordena rareza",
         },
         "holdout_entrenamiento": {
-            "macro_f1_binario": md["macro_f1_binario_holdout"],
-            "macro_f1_multiclase": md["macro_f1_multiclase_holdout"],
-            "weighted_f1_multiclase": md["weighted_f1_multiclase_holdout"],
+            "macro_f1_binario": _cierta(md.get("macro_f1_binario_holdout")),
+            "macro_f1_multiclase": _cierta(md.get("macro_f1_multiclase_holdout")),
+            "weighted_f1_multiclase": _cierta(md.get("weighted_f1_multiclase_holdout")),
             "nota": "misma distribución del entrenamiento; NO es una prueba "
                     "independiente y no debe citarse como cumplimiento de PERF-003",
         },
         "latencia": _latencia(modelos, test),
-        "tiempos_entrenamiento_segundos": md["tiempos_entrenamiento_segundos"],
-        "comparativa_modelos": md["comparativa"],
+        "tiempos_entrenamiento_segundos": md.get("tiempos_entrenamiento_segundos") or {},
+        "comparativa_modelos": md.get("comparativa") or [],
+        "validacion_cruzada": md.get("cv_info") or {},
     }
 
     METRICS.write_text(json.dumps(metricas, ensure_ascii=False, indent=2),
@@ -198,10 +200,94 @@ def _tabla(filas: list[tuple[str, object]]) -> str:
     return "\n".join(out)
 
 
+def _nota_holdout(holdout: dict) -> str:
+    """Explica el holdout solo cuando hay algo que explicar."""
+    valores = (holdout.get("macro_f1_binario"), holdout.get("macro_f1_multiclase"))
+    if all(v is None for v in valores):
+        return (
+            "El entrenamiento que produjo estos artefactos no guardó las cifras "
+            "del holdout, así que aquí no se publican. Rellenarlas desde otra "
+            "corrida mezclaría modelos distintos. La validación cruzada de esa "
+            "corrida sí quedó registrada en metadata.json."
+        )
+    return (
+        "Estas cifras son altas porque el holdout sale de la misma distribución "
+        "del entrenamiento. Se publican para comparar contra KDDTest+, no como "
+        "prueba de generalización."
+    )
+
+
+def _opcional(valor) -> str:
+    """Imprime la métrica o dice que no se midió."""
+    if valor is None:
+        return "no medido"
+    return f"{float(valor):.4f}"
+
+
+def _cierta(valor) -> float | None:
+    """Devuelve la métrica solo si existe y es un número positivo.
+
+    Un 0.0 en el holdout no es un resultado: es un campo que el entrenamiento no
+    escribió. Publicarlo como "macro-F1 = 0.0000" sería inventar un dato tan
+    falso como redondear un 0.80 a 0.90.
+    """
+    if valor is None:
+        return None
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        return None
+    return numero if numero > 0 else None
+
+
+def _tiempo(m: dict, clave: str) -> str:
+    """Segundos de entrenamiento si esta corrida los midió; si no, "no medido".
+
+    `motor.evaluate` evalúa artefactos ya entrenados, así que la tabla de
+    tiempos puede venir vacía. Un cero o un promedio inventado sería peor que
+    decir que no se midió.
+    """
+    tiempos = m.get("tiempos_entrenamiento_segundos") or {}
+    if not isinstance(tiempos, dict) or clave not in tiempos:
+        return "no medido"
+    return str(tiempos[clave])
+
+
 def _escribir_informe(m: dict) -> None:
     b = m["binario_kddtest"]
     mc = m["multiclase_kddtest"]
     k21 = m["kddtest21"]
+    umbral = m["modelo_produccion"]["umbral_decision"]
+    anterior = m["modelo_produccion"].get("umbral_decision_anterior")
+
+    if b["macro_f1"] >= 0.90:
+        criterion_perf = (
+            f"- La métrica de referencia (PERF-003) pedía macro-F1 mayor o igual "
+            f"a 0.90 sobre KDDTest+. Con el umbral recalibrado se obtiene "
+            f"{b['macro_f1']}. La solicitud de cambio de criterio "
+            f"`SOLICITUD_CAMBIO_PERF-003.md` queda sin objeto, pero no se da por "
+            f"aprobada ni archivada sin firma del profesor."
+        )
+    else:
+        criterion_perf = (
+            "- La métrica de referencia del proyecto (PERF-003) pedía un macro-F1 "
+            "mayor o igual a 0.90 sobre KDDTest+. No se alcanza con este umbral; "
+            "ver SOLICITUD_CAMBIO_PERF-003.md."
+        )
+
+    if anterior is not None:
+        umbral_nota = (
+            f"- El umbral de decisión se recalibró de {anterior} a {umbral} con "
+            f"`leave-one-family-out` sobre KDDTrain+, sin usar KDDTest+ "
+            f"(`docs/UMBRAL_FAMILIAS_NO_VISTAS.json`). El precio en falsos "
+            f"positivos está medido en `docs/SENSIBILIDAD_UMBRAL.md` y se acepta "
+            f"a cambio de recuperar ataques que el modelo no vio en entrenamiento."
+        )
+    else:
+        umbral_nota = (
+            "- El umbral de decisión se calibró sobre el holdout del "
+            "entrenamiento. Ajustarlo mirando KDDTest+ sería hacer trampa."
+        )
     lineas = [
         "# INFORME_METRICAS.md",
         "",
@@ -296,13 +382,11 @@ def _escribir_informe(m: dict) -> None:
         "",
         "| Métrica en holdout | Valor |",
         "|---|---|",
-        f"| Macro-F1 binario | {m['holdout_entrenamiento']['macro_f1_binario']} |",
-        f"| Macro-F1 multiclase | {m['holdout_entrenamiento']['macro_f1_multiclase']} |",
-        f"| Weighted-F1 multiclase | {m['holdout_entrenamiento']['weighted_f1_multiclase']} |",
+        f"| Macro-F1 binario | {_opcional(m['holdout_entrenamiento']['macro_f1_binario'])} |",
+        f"| Macro-F1 multiclase | {_opcional(m['holdout_entrenamiento']['macro_f1_multiclase'])} |",
+        f"| Weighted-F1 multiclase | {_opcional(m['holdout_entrenamiento']['weighted_f1_multiclase'])} |",
         "",
-        "Estas cifras son altas porque el holdout sale de la misma distribución "
-        "del entrenamiento. Se publican para comparar contra KDDTest+, no como "
-        "prueba de generalización.",
+        _nota_holdout(m["holdout_entrenamiento"]),
         "",
         "## 8. Latencia y tiempos",
         "",
@@ -311,12 +395,16 @@ def _escribir_informe(m: dict) -> None:
             ("Milisegundos por fila en lote de 500",
              m["latencia"]["ms_por_fila_en_lote_500"]),
             ("Segundos de entrenamiento del RF binario",
-             m["tiempos_entrenamiento_segundos"]["rf_binario"]),
+             _tiempo(m, "rf_binario")),
             ("Segundos de entrenamiento del RF multiclase",
-             m["tiempos_entrenamiento_segundos"]["rf_multiclase"]),
+             _tiempo(m, "rf_multiclase")),
             ("Segundos de entrenamiento del Isolation Forest",
-             m["tiempos_entrenamiento_segundos"]["iforest"]),
+             _tiempo(m, "iforest")),
         ]),
+        "",
+        "Los tiempos de entrenamiento los escribe `motor.train`. Si esta tabla "
+        "dice \"no medido\", la evaluación corrió sobre artefactos ya entrenados "
+        "y esa cifra no forma parte de esta corrida: no se rellena a ojo.",
         "",
         "## 9. Comparativa de modelos (no desplegados)",
         "",
@@ -328,6 +416,16 @@ def _escribir_informe(m: dict) -> None:
             f"| {c['modelo']} | {c['filas_entrenamiento']} | {c['macro_f1_binario']} | "
             f"{c['accuracy']} | {c['segundos_entrenamiento']} |"
         )
+    if not m["comparativa_modelos"]:
+        lineas.append(
+            "| no medido | - | - | - | - |"
+        )
+        lineas += [
+            "",
+            "La comparativa se produce al entrenar (`motor.train`). Esta corrida "
+            "evaluó los artefactos existentes, así que la tabla queda vacía en "
+            "lugar de mostrar cifras que no se midieron hoy.",
+        ]
     lineas += [
         "",
         "LinearSVC y KNN se midieron sobre una submuestra de 25,000 filas y una "
@@ -342,12 +440,8 @@ def _escribir_informe(m: dict) -> None:
         "de hace veinticinco años.",
         "- KDDTest+ incluye ataques que no están en entrenamiento. El recall de "
         "r2l es el más castigado y no se arregla con hiperparámetros.",
-        "- El umbral de decisión se calibró sobre el holdout del entrenamiento. "
-        "En KDDTest+ el rendimiento óptimo del umbral sería otro; ajustarlo "
-        "aquí sería hacer trampa, así que no se hizo.",
-        "- La métrica de referencia del proyecto (PERF-003) pedía un macro-F1 "
-        "mayor o igual a 0.90 sobre KDDTest+. Con estos datos y esta literatura "
-        "no es alcanzable; ver SOLICITUD_CAMBIO_PERF-003.md.",
+        umbral_nota,
+        criterion_perf,
         "",
         "Documento generado automáticamente desde metrics.json. Redacción "
         "asistida por inteligencia artificial; las cifras son salida de "

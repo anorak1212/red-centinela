@@ -1,0 +1,61 @@
+{
+  "generado": "2026-11-17T00:36:38-0600",
+  "protocolo": "leave-one-family-out sobre KDDTrain+; umbral calibrado en holdout interno; KDDTest+ no se uso",
+  "resultados": [
+    {
+      "candidato": "rf_balanceado",
+      "recall_medio_familias_no_vistas": 0.0829,
+      "detalle": {
+        "r2l": {
+          "umbral": 0.37,
+          "macro_f1_calibracion": 0.9993,
+          "recall_familia_no_vista": 0.0121,
+          "segundos": 8.2
+        },
+        "u2r": {
+          "umbral": 0.34,
+          "macro_f1_calibracion": 0.9992,
+          "recall_familia_no_vista": 0.1538,
+          "segundos": 10.4
+        }
+      }
+    },
+    {
+      "candidato": "hist_gradient_boosting",
+      "recall_medio_familias_no_vistas": 0.0354,
+      "detalle": {
+        "r2l": {
+          "umbral": 0.23,
+          "macro_f1_calibracion": 0.9994,
+          "recall_familia_no_vista": 0.0131,
+          "segundos": 12.5
+        },
+        "u2r": {
+          "umbral": 0.58,
+          "macro_f1_calibracion": 0.9994,
+          "recall_familia_no_vista": 0.0577,
+          "segundos": 12.3
+        }
+      }
+    },
+    {
+      "candidato": "extratrees_balanceado",
+      "recall_medio_familias_no_vistas": 0.0324,
+      "detalle": {
+        "r2l": {
+          "umbral": 0.44,
+          "macro_f1_calibracion": 0.9992,
+          "recall_familia_no_vista": 0.007,
+          "segundos": 15.2
+        },
+        "u2r": {
+          "umbral": 0.52,
+          "macro_f1_calibracion": 0.9988,
+          "recall_familia_no_vista": 0.0577,
+          "segundos": 16.0
+        }
+      }
+    }
+  ],
+  "elegido": "rf_balanceado"
+}

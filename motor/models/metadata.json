@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "generado": "2026-11-08T13:03:24-0600",
+  "version": "1.3.0-fasec3",
+  "generado": "2026-11-12T17:12:18-0600",
   "semilla": 42,
   "n_features": 122,
   "feature_names": [
@@ -136,24 +136,7 @@
     "rf_multi",
     "iforest"
   ],
-  "comparativa": [
-    {
-      "modelo": "linear_svc",
-      "filas_entrenamiento": 25000,
-      "macro_f1_binario": 0.9687,
-      "accuracy": 0.9689,
-      "segundos_entrenamiento": 1.7,
-      "nota": "solo comparativa; no se despliega"
-    },
-    {
-      "modelo": "knn7",
-      "filas_entrenamiento": 25000,
-      "macro_f1_binario": 0.9936,
-      "accuracy": 0.9936,
-      "segundos_entrenamiento": 4.0,
-      "nota": "solo comparativa; no se despliega"
-    }
-  ],
+  "comparativa": [],
   "clases": [
     "normal",
     "dos",
@@ -255,19 +238,177 @@
       "OTH"
     ]
   },
-  "tiempos_entrenamiento_segundos": {
-    "rf_binario": 62.9,
-    "rf_multiclase": 58.9,
-    "iforest": 5.2
+  "tiempos_entrenamiento_segundos": {},
+  "umbral_decision": 0.01,
+  "macro_f1_binario_holdout": 0.0,
+  "macro_f1_multiclase_holdout": 0.0,
+  "weighted_f1_multiclase_holdout": 0.0,
+  "nota_seleccion": "FASE C v3: pesos reforzando r2l/u2r en binario, CV interna, KDDTest+ una sola vez",
+  "cv_info": {
+    "resultados": [
+      {
+        "nombre": "v1_fasec_ref",
+        "folds": [
+          {
+            "umbral": 0.475,
+            "mf1_bin": 0.9988991931198055,
+            "mf1_m": 0.9002120279676878,
+            "det_r2l": 0.963855421686747,
+            "det_u2r": 0.6470588235294118
+          },
+          {
+            "umbral": 0.42,
+            "mf1_bin": 0.9990907401921807,
+            "mf1_m": 0.9695783538590271,
+            "det_r2l": 0.9909365558912386,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.415,
+            "mf1_bin": 0.9990906861338196,
+            "mf1_m": 0.9334723016670381,
+            "det_r2l": 0.9909638554216867,
+            "det_u2r": 0.9444444444444444
+          }
+        ],
+        "macro_f1_binario_val": 0.999026873148602,
+        "macro_f1_multiclase_val": 0.9344208944979178,
+        "det_r2l": 0.9819186109998909,
+        "det_u2r": 0.8442265795206971,
+        "umbral": 0.42
+      },
+      {
+        "nombre": "bin_peso_raro_suave",
+        "folds": [
+          {
+            "umbral": 0.36,
+            "mf1_bin": 0.9988514310001957,
+            "mf1_m": 0.9002120279676878,
+            "det_r2l": 0.9759036144578314,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.385,
+            "mf1_bin": 0.9988754002875302,
+            "mf1_m": 0.9695783538590271,
+            "det_r2l": 0.9909365558912386,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.38,
+            "mf1_bin": 0.998994988843011,
+            "mf1_m": 0.9334723016670381,
+            "det_r2l": 0.9909638554216867,
+            "det_u2r": 0.9444444444444444
+          }
+        ],
+        "macro_f1_binario_val": 0.9989072733769122,
+        "macro_f1_multiclase_val": 0.9344208944979178,
+        "det_r2l": 0.9859346752569188,
+        "det_u2r": 0.9422657952069716,
+        "umbral": 0.38
+      },
+      {
+        "nombre": "bin_peso_raro_fuerte",
+        "folds": [
+          {
+            "umbral": 0.395,
+            "mf1_bin": 0.9988514006196253,
+            "mf1_m": 0.9002120279676878,
+            "det_r2l": 0.9759036144578314,
+            "det_u2r": 0.8235294117647058
+          },
+          {
+            "umbral": 0.37,
+            "mf1_bin": 0.9987557579271652,
+            "mf1_m": 0.9695783538590271,
+            "det_r2l": 0.9909365558912386,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.375,
+            "mf1_bin": 0.9988992662134908,
+            "mf1_m": 0.9334723016670381,
+            "det_r2l": 0.9909638554216867,
+            "det_u2r": 0.9444444444444444
+          }
+        ],
+        "macro_f1_binario_val": 0.9988354749200937,
+        "macro_f1_multiclase_val": 0.9344208944979178,
+        "det_r2l": 0.9859346752569188,
+        "det_u2r": 0.903050108932462,
+        "umbral": 0.375
+      },
+      {
+        "nombre": "bin_peso_raro_smote_mas",
+        "folds": [
+          {
+            "umbral": 0.445,
+            "mf1_bin": 0.9982531080334205,
+            "mf1_m": 0.9121932690252621,
+            "det_r2l": 0.963855421686747,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.445,
+            "mf1_bin": 0.9979900440267865,
+            "mf1_m": 0.938009402237266,
+            "det_r2l": 0.9848942598187311,
+            "det_u2r": 0.9411764705882353
+          },
+          {
+            "umbral": 0.405,
+            "mf1_bin": 0.9978465607081168,
+            "mf1_m": 0.9263128684022736,
+            "det_r2l": 0.9939759036144579,
+            "det_u2r": 0.9444444444444444
+          }
+        ],
+        "macro_f1_binario_val": 0.9980299042561079,
+        "macro_f1_multiclase_val": 0.9255051798882672,
+        "det_r2l": 0.980908528373312,
+        "det_u2r": 0.9422657952069716,
+        "umbral": 0.445
+      }
+    ],
+    "elegido": {
+      "nombre": "v1_fasec_ref",
+      "folds": [
+        {
+          "umbral": 0.475,
+          "mf1_bin": 0.9988991931198055,
+          "mf1_m": 0.9002120279676878,
+          "det_r2l": 0.963855421686747,
+          "det_u2r": 0.6470588235294118
+        },
+        {
+          "umbral": 0.42,
+          "mf1_bin": 0.9990907401921807,
+          "mf1_m": 0.9695783538590271,
+          "det_r2l": 0.9909365558912386,
+          "det_u2r": 0.9411764705882353
+        },
+        {
+          "umbral": 0.415,
+          "mf1_bin": 0.9990906861338196,
+          "mf1_m": 0.9334723016670381,
+          "det_r2l": 0.9909638554216867,
+          "det_u2r": 0.9444444444444444
+        }
+      ],
+      "macro_f1_binario_val": 0.999026873148602,
+      "macro_f1_multiclase_val": 0.9344208944979178,
+      "det_r2l": 0.9819186109998909,
+      "det_u2r": 0.8442265795206971,
+      "umbral": 0.42
+    }
   },
-  "umbral_decision": 0.41,
-  "macro_f1_binario_holdout": 0.9992,
-  "segundos_holdout_rf_binario": 62.2,
-  "macro_f1_multiclase_holdout": 0.9458,
-  "weighted_f1_multiclase_holdout": 0.9987,
-  "segundos_holdout_rf_multiclase": 55.5,
   "svm_proba_scale": [
-    -24.54228280528706,
-    247.73656247587644
-  ]
+    0.0,
+    1.0
+  ],
+  "umbral_decision_anterior": 0.42,
+  "umbral_decision_metodo": "maximo del macro-F1 promedio en leave-one-family-out sobre KDDTrain+, con mezcla ataque/normal 1.32 a 1; KDDTest+ no participo en la eleccion",
+  "umbral_decision_evidencia": "docs/UMBRAL_FAMILIAS_NO_VISTAS.json",
+  "umbral_decision_recalibrado": "2026-11-17T09:29:43-0600"
 }

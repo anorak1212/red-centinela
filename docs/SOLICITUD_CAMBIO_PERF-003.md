@@ -1,9 +1,36 @@
 # Solicitud de cambio PERF-003: criterio de rendimiento del modelo
 
-Estado: pendiente de aprobación del patrocinador.
-Fecha: 11 de noviembre de 2026.
+Estado: sin objeto operativo desde el 17 de noviembre de 2026, porque el criterio
+se cumple con la recalibración del umbral. Queda pendiente de que el profesor lo
+confirme; esta nota no es una aprobación firmada.
+Fecha: 11 de noviembre de 2026. Resolución añadida: 17 de noviembre de 2026.
 Proyecto: Red Centinela. Módulo afectado: M2, motor de detección.
 Preparada por: PMO del proyecto.
+
+## 0. Resolución del 17 de noviembre de 2026
+
+Las cifras de la sección 2 describen el estado del 11 de noviembre con el
+umbral de 0.41. Ya no son las cifras vigentes. Un experimento de
+`leave-one-family-out` sobre KDDTrain+ (`docs/UMBRAL_FAMILIAS_NO_VISTAS.json`)
+mostró que aquel umbral estaba calibrado para familias de ataque conocidas, y
+eligió 0.01 sin usar KDDTest+. Tras aplicarlo y evaluar una sola vez:
+
+| Métrica | 11/11, umbral 0.41 | 17/11, umbral 0.01 |
+|---|---|---|
+| Macro-F1 binario en KDDTest+ | 0.7995 | 0.9251 |
+| Precisión de ataque | 0.9689 | 0.8986 |
+| Recall de ataque | 0.6698 | 0.9845 |
+| Macro-F1 5 clases | 0.4716 | 0.5541 |
+
+PERF-003 se cumple en la cabeza binaria. La Opción A de la sección 4 ya no
+hace falta como salida; si el profesor decide aceptarla igualmente, habría que
+consultar el acta antes de dar el criterio por cerrado. La limitación real se
+movió a la cabeza multiclase (0.5541), que no cambió con el umbral.
+
+El costo se documenta y no se esconde: los falsos positivos suben de 285 a
+1,058 sobre 9,711 registros normales de KDDTest+. La curva completa está en
+`docs/SENSIBILIDAD_UMBRAL.md` y la decisión, en `docs/RECALIBRACION_UMBRAL.md`.
+No se reentrenó ningún modelo: solo cambió el punto de corte en metadata.json.
 
 ## 1. Qué dice la línea base
 

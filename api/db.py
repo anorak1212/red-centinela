@@ -51,6 +51,13 @@ CREATE TABLE IF NOT EXISTS predicciones (
     features            TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_predicciones_ts ON predicciones (ts DESC);
+CREATE TABLE IF NOT EXISTS envios_alerta (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          TEXT    NOT NULL,
+    tipo        TEXT    NOT NULL,
+    message_id  TEXT,
+    ok          INTEGER NOT NULL DEFAULT 0
+);
 """
 
 _SCHEMA_POSTGRES = """
@@ -68,6 +75,13 @@ CREATE TABLE IF NOT EXISTS predicciones (
     features            TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_predicciones_ts ON predicciones (ts DESC);
+CREATE TABLE IF NOT EXISTS envios_alerta (
+    id          BIGSERIAL PRIMARY KEY,
+    ts          TEXT    NOT NULL,
+    tipo        TEXT    NOT NULL,
+    message_id  TEXT,
+    ok          INTEGER NOT NULL DEFAULT 0
+);
 """
 
 _COLUMNAS_ESPERADAS = (
@@ -257,6 +271,79 @@ def marcar_alerta(id_prediccion: int, enviada: bool) -> None:
                     con.close()
     except Exception:  # noqa: BLE001, S110 - no debe tumbar la respuesta
         pass
+
+
+def registrar_envio(tipo: str, ok: bool, message_id: str | None = None) -> None:
+    """Guarda un intento real de envío a Telegram.
+
+    Sobrevive a los reinicios del servicio, que es lo que el contador en memoria
+    no hacía. `tipo` distingue un mensaje de prueba de una detección; `ok` solo
+    es verdadero cuando el Bot API confirmó con `ok: true`.
+
+    La telemetría no debe tumbar una petición: si la escritura falla, se pierde
+    el registro y el envío sigue contando en memoria.
+    """
+    valores = (
+        datetime.now(UTC).isoformat(timespec="seconds"),
+        str(tipo)[:20],
+        str(message_id) if message_id is not None else None,
+        int(bool(ok)),
+    )
+    sql = "INSERT INTO envios_alerta (ts, tipo, message_id, ok) VALUES (?, ?, ?, ?)"
+    try:
+        with _lock:
+            if motor() == "postgres":
+                con = _conexion_postgres()
+                try:
+                    with con.cursor() as cur:
+                        cur.execute(_marcadores(sql), valores)
+                    con.commit()
+                finally:
+                    con.close()
+            else:
+                con = _conexion_sqlite()
+                try:
+                    con.execute(sql, valores)
+                    con.commit()
+                finally:
+                    con.close()
+    except Exception:  # noqa: BLE001 - telemetría no crítica
+        return
+
+
+def resumen_alertas() -> dict:
+    """Cuenta los envíos persistidos, no los de esta sesión."""
+    sql = (
+        "SELECT"
+        " COALESCE(SUM(ok), 0) AS enviados,"
+        " COALESCE(SUM(1 - ok), 0) AS fallidos,"
+        " MAX(CASE WHEN ok = 1 THEN ts END) AS ultimo_envio_exitoso"
+        " FROM envios_alerta"
+    )
+    vacio = {"enviados": 0, "fallidos": 0, "ultimo_envio_exitoso": None}
+    try:
+        with _lock:
+            if motor() == "postgres":
+                con = _conexion_postgres()
+                try:
+                    with con.cursor() as cur:
+                        cur.execute(sql)
+                        fila = cur.fetchone() or {}
+                finally:
+                    con.close()
+            else:
+                con = _conexion_sqlite()
+                try:
+                    fila = dict(con.execute(sql).fetchone() or {})
+                finally:
+                    con.close()
+    except Exception:  # noqa: BLE001 - sin tabla todavía o base caída
+        return vacio
+    return {
+        "enviados": int(fila.get("enviados") or 0),
+        "fallidos": int(fila.get("fallidos") or 0),
+        "ultimo_envio_exitoso": fila.get("ultimo_envio_exitoso"),
+    }
 
 
 # --------------------------------------------------------------------------

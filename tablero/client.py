@@ -196,6 +196,38 @@ def predecir(features: dict) -> dict:
     return r.json()
 
 
+def _ms_servidor(r: requests.Response) -> float | None:
+    """Lee el `Server-Timing` de la respuesta, si el despliegue lo envía.
+
+    Formato esperado: `predict;dur=12.34`. Devuelve None cuando la API es
+    anterior a esa cabecera, para no inventar un cero.
+    """
+    valor = r.headers.get("Server-Timing") or ""
+    for parte in valor.split(","):
+        trozos = [t.strip() for t in parte.split(";")]
+        if not trozos or trozos[0] != "predict":
+            continue
+        for trozo in trozos[1:]:
+            if trozo.startswith("dur="):
+                try:
+                    return float(trozo[4:])
+                except ValueError:
+                    return None
+    return None
+
+
+def predecir_medido(features: dict) -> tuple[dict, float | None]:
+    """Predice y devuelve (respuesta, milisegundos de cómputo del servidor).
+
+    El segundo elemento es None cuando la API no declara `Server-Timing`; en
+    ese caso quien mide debe recurrir a la ida y vuelta completa y decirlo.
+    """
+    r = _post("/predict", json={"features": features})
+    if r.status_code != 200:
+        raise ApiError(_detalle(r, "/predict"))
+    return r.json(), _ms_servidor(r)
+
+
 def predecir_lote(filas: list[dict], tamano: int = 200, progreso=None) -> list[dict]:
     """Predice por lotes para no rebasar el límite de la API ni el tiempo de espera."""
     tamano = max(1, min(int(tamano), LOTE_MAXIMO))

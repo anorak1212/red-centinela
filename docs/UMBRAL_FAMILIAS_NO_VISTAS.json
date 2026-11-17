@@ -1,0 +1,1458 @@
+{
+  "generado": "2026-11-17T00:41:33-0600",
+  "protocolo": "leave-one-family-out sobre KDDTrain+; mezcla ataque/normal con la proporcion de KDDTest+ (1.32 a 1); KDDTest+ no se uso",
+  "por_familia": {
+    "dos": {
+      "filas_familia": 45927,
+      "mezcla": {
+        "ataques": 17799,
+        "normales": 13469
+      },
+      "umbral_optimo": 0.04,
+      "macro_f1_optimo": 0.9823,
+      "macro_f1_en_042": 0.9177,
+      "curva": [
+        {
+          "umbral": 0.01,
+          "macro_f1": 0.9665
+        },
+        {
+          "umbral": 0.02,
+          "macro_f1": 0.9787
+        },
+        {
+          "umbral": 0.03,
+          "macro_f1": 0.9813
+        },
+        {
+          "umbral": 0.04,
+          "macro_f1": 0.9823
+        },
+        {
+          "umbral": 0.05,
+          "macro_f1": 0.98
+        },
+        {
+          "umbral": 0.06,
+          "macro_f1": 0.968
+        },
+        {
+          "umbral": 0.07,
+          "macro_f1": 0.9597
+        },
+        {
+          "umbral": 0.08,
+          "macro_f1": 0.9576
+        },
+        {
+          "umbral": 0.09,
+          "macro_f1": 0.955
+        },
+        {
+          "umbral": 0.1,
+          "macro_f1": 0.9527
+        },
+        {
+          "umbral": 0.11,
+          "macro_f1": 0.9515
+        },
+        {
+          "umbral": 0.12,
+          "macro_f1": 0.9509
+        },
+        {
+          "umbral": 0.13,
+          "macro_f1": 0.9503
+        },
+        {
+          "umbral": 0.14,
+          "macro_f1": 0.95
+        },
+        {
+          "umbral": 0.15,
+          "macro_f1": 0.9499
+        },
+        {
+          "umbral": 0.16,
+          "macro_f1": 0.9497
+        },
+        {
+          "umbral": 0.17,
+          "macro_f1": 0.9492
+        },
+        {
+          "umbral": 0.18,
+          "macro_f1": 0.9488
+        },
+        {
+          "umbral": 0.19,
+          "macro_f1": 0.9483
+        },
+        {
+          "umbral": 0.2,
+          "macro_f1": 0.948
+        },
+        {
+          "umbral": 0.21,
+          "macro_f1": 0.9478
+        },
+        {
+          "umbral": 0.22,
+          "macro_f1": 0.9477
+        },
+        {
+          "umbral": 0.23,
+          "macro_f1": 0.9472
+        },
+        {
+          "umbral": 0.24,
+          "macro_f1": 0.947
+        },
+        {
+          "umbral": 0.25,
+          "macro_f1": 0.9465
+        },
+        {
+          "umbral": 0.26,
+          "macro_f1": 0.946
+        },
+        {
+          "umbral": 0.27,
+          "macro_f1": 0.9455
+        },
+        {
+          "umbral": 0.28,
+          "macro_f1": 0.9453
+        },
+        {
+          "umbral": 0.29,
+          "macro_f1": 0.9449
+        },
+        {
+          "umbral": 0.3,
+          "macro_f1": 0.9439
+        },
+        {
+          "umbral": 0.31,
+          "macro_f1": 0.9424
+        },
+        {
+          "umbral": 0.32,
+          "macro_f1": 0.9405
+        },
+        {
+          "umbral": 0.33,
+          "macro_f1": 0.9391
+        },
+        {
+          "umbral": 0.34,
+          "macro_f1": 0.9373
+        },
+        {
+          "umbral": 0.35,
+          "macro_f1": 0.9356
+        },
+        {
+          "umbral": 0.36,
+          "macro_f1": 0.9339
+        },
+        {
+          "umbral": 0.37,
+          "macro_f1": 0.9314
+        },
+        {
+          "umbral": 0.38,
+          "macro_f1": 0.9287
+        },
+        {
+          "umbral": 0.39,
+          "macro_f1": 0.9265
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1": 0.9242
+        },
+        {
+          "umbral": 0.41,
+          "macro_f1": 0.9205
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1": 0.9177
+        },
+        {
+          "umbral": 0.43,
+          "macro_f1": 0.9151
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1": 0.9127
+        },
+        {
+          "umbral": 0.45,
+          "macro_f1": 0.9095
+        },
+        {
+          "umbral": 0.46,
+          "macro_f1": 0.9037
+        },
+        {
+          "umbral": 0.47,
+          "macro_f1": 0.8946
+        },
+        {
+          "umbral": 0.48,
+          "macro_f1": 0.8797
+        },
+        {
+          "umbral": 0.49,
+          "macro_f1": 0.8647
+        },
+        {
+          "umbral": 0.5,
+          "macro_f1": 0.8458
+        },
+        {
+          "umbral": 0.51,
+          "macro_f1": 0.8195
+        },
+        {
+          "umbral": 0.52,
+          "macro_f1": 0.7912
+        },
+        {
+          "umbral": 0.53,
+          "macro_f1": 0.7623
+        },
+        {
+          "umbral": 0.54,
+          "macro_f1": 0.737
+        },
+        {
+          "umbral": 0.55,
+          "macro_f1": 0.7148
+        },
+        {
+          "umbral": 0.56,
+          "macro_f1": 0.6978
+        },
+        {
+          "umbral": 0.57,
+          "macro_f1": 0.6822
+        },
+        {
+          "umbral": 0.58,
+          "macro_f1": 0.6715
+        },
+        {
+          "umbral": 0.59,
+          "macro_f1": 0.6645
+        },
+        {
+          "umbral": 0.6,
+          "macro_f1": 0.6596
+        },
+        {
+          "umbral": 0.61,
+          "macro_f1": 0.652
+        },
+        {
+          "umbral": 0.62,
+          "macro_f1": 0.6399
+        },
+        {
+          "umbral": 0.63,
+          "macro_f1": 0.6208
+        },
+        {
+          "umbral": 0.64,
+          "macro_f1": 0.5807
+        },
+        {
+          "umbral": 0.65,
+          "macro_f1": 0.5172
+        },
+        {
+          "umbral": 0.66,
+          "macro_f1": 0.4588
+        },
+        {
+          "umbral": 0.67,
+          "macro_f1": 0.4196
+        },
+        {
+          "umbral": 0.68,
+          "macro_f1": 0.4023
+        },
+        {
+          "umbral": 0.69,
+          "macro_f1": 0.3912
+        },
+        {
+          "umbral": 0.7,
+          "macro_f1": 0.3811
+        }
+      ]
+    },
+    "probe": {
+      "filas_familia": 11656,
+      "mezcla": {
+        "ataques": 11656,
+        "normales": 8820
+      },
+      "umbral_optimo": 0.01,
+      "macro_f1_optimo": 0.9751,
+      "macro_f1_en_042": 0.6297,
+      "curva": [
+        {
+          "umbral": 0.01,
+          "macro_f1": 0.9751
+        },
+        {
+          "umbral": 0.02,
+          "macro_f1": 0.9737
+        },
+        {
+          "umbral": 0.03,
+          "macro_f1": 0.9711
+        },
+        {
+          "umbral": 0.04,
+          "macro_f1": 0.9583
+        },
+        {
+          "umbral": 0.05,
+          "macro_f1": 0.9525
+        },
+        {
+          "umbral": 0.06,
+          "macro_f1": 0.9479
+        },
+        {
+          "umbral": 0.07,
+          "macro_f1": 0.9451
+        },
+        {
+          "umbral": 0.08,
+          "macro_f1": 0.9417
+        },
+        {
+          "umbral": 0.09,
+          "macro_f1": 0.9386
+        },
+        {
+          "umbral": 0.1,
+          "macro_f1": 0.9362
+        },
+        {
+          "umbral": 0.11,
+          "macro_f1": 0.9331
+        },
+        {
+          "umbral": 0.12,
+          "macro_f1": 0.9306
+        },
+        {
+          "umbral": 0.13,
+          "macro_f1": 0.9272
+        },
+        {
+          "umbral": 0.14,
+          "macro_f1": 0.9173
+        },
+        {
+          "umbral": 0.15,
+          "macro_f1": 0.891
+        },
+        {
+          "umbral": 0.16,
+          "macro_f1": 0.85
+        },
+        {
+          "umbral": 0.17,
+          "macro_f1": 0.8092
+        },
+        {
+          "umbral": 0.18,
+          "macro_f1": 0.789
+        },
+        {
+          "umbral": 0.19,
+          "macro_f1": 0.7696
+        },
+        {
+          "umbral": 0.2,
+          "macro_f1": 0.7553
+        },
+        {
+          "umbral": 0.21,
+          "macro_f1": 0.7451
+        },
+        {
+          "umbral": 0.22,
+          "macro_f1": 0.7396
+        },
+        {
+          "umbral": 0.23,
+          "macro_f1": 0.7345
+        },
+        {
+          "umbral": 0.24,
+          "macro_f1": 0.7274
+        },
+        {
+          "umbral": 0.25,
+          "macro_f1": 0.7217
+        },
+        {
+          "umbral": 0.26,
+          "macro_f1": 0.7161
+        },
+        {
+          "umbral": 0.27,
+          "macro_f1": 0.7061
+        },
+        {
+          "umbral": 0.28,
+          "macro_f1": 0.7016
+        },
+        {
+          "umbral": 0.29,
+          "macro_f1": 0.6744
+        },
+        {
+          "umbral": 0.3,
+          "macro_f1": 0.6675
+        },
+        {
+          "umbral": 0.31,
+          "macro_f1": 0.665
+        },
+        {
+          "umbral": 0.32,
+          "macro_f1": 0.6609
+        },
+        {
+          "umbral": 0.33,
+          "macro_f1": 0.6581
+        },
+        {
+          "umbral": 0.34,
+          "macro_f1": 0.6563
+        },
+        {
+          "umbral": 0.35,
+          "macro_f1": 0.6532
+        },
+        {
+          "umbral": 0.36,
+          "macro_f1": 0.65
+        },
+        {
+          "umbral": 0.37,
+          "macro_f1": 0.6476
+        },
+        {
+          "umbral": 0.38,
+          "macro_f1": 0.6445
+        },
+        {
+          "umbral": 0.39,
+          "macro_f1": 0.641
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1": 0.6385
+        },
+        {
+          "umbral": 0.41,
+          "macro_f1": 0.633
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1": 0.6297
+        },
+        {
+          "umbral": 0.43,
+          "macro_f1": 0.6254
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1": 0.6205
+        },
+        {
+          "umbral": 0.45,
+          "macro_f1": 0.6171
+        },
+        {
+          "umbral": 0.46,
+          "macro_f1": 0.612
+        },
+        {
+          "umbral": 0.47,
+          "macro_f1": 0.6048
+        },
+        {
+          "umbral": 0.48,
+          "macro_f1": 0.5964
+        },
+        {
+          "umbral": 0.49,
+          "macro_f1": 0.5906
+        },
+        {
+          "umbral": 0.5,
+          "macro_f1": 0.5807
+        },
+        {
+          "umbral": 0.51,
+          "macro_f1": 0.5738
+        },
+        {
+          "umbral": 0.52,
+          "macro_f1": 0.5475
+        },
+        {
+          "umbral": 0.53,
+          "macro_f1": 0.539
+        },
+        {
+          "umbral": 0.54,
+          "macro_f1": 0.5246
+        },
+        {
+          "umbral": 0.55,
+          "macro_f1": 0.5204
+        },
+        {
+          "umbral": 0.56,
+          "macro_f1": 0.5186
+        },
+        {
+          "umbral": 0.57,
+          "macro_f1": 0.5158
+        },
+        {
+          "umbral": 0.58,
+          "macro_f1": 0.5121
+        },
+        {
+          "umbral": 0.59,
+          "macro_f1": 0.5077
+        },
+        {
+          "umbral": 0.6,
+          "macro_f1": 0.5035
+        },
+        {
+          "umbral": 0.61,
+          "macro_f1": 0.4889
+        },
+        {
+          "umbral": 0.62,
+          "macro_f1": 0.4765
+        },
+        {
+          "umbral": 0.63,
+          "macro_f1": 0.4729
+        },
+        {
+          "umbral": 0.64,
+          "macro_f1": 0.4682
+        },
+        {
+          "umbral": 0.65,
+          "macro_f1": 0.4532
+        },
+        {
+          "umbral": 0.66,
+          "macro_f1": 0.4447
+        },
+        {
+          "umbral": 0.67,
+          "macro_f1": 0.422
+        },
+        {
+          "umbral": 0.68,
+          "macro_f1": 0.414
+        },
+        {
+          "umbral": 0.69,
+          "macro_f1": 0.4035
+        },
+        {
+          "umbral": 0.7,
+          "macro_f1": 0.3831
+        }
+      ]
+    },
+    "r2l": {
+      "filas_familia": 995,
+      "mezcla": {
+        "ataques": 995,
+        "normales": 753
+      },
+      "umbral_optimo": 0.01,
+      "macro_f1_optimo": 0.6619,
+      "macro_f1_en_042": 0.3111,
+      "curva": [
+        {
+          "umbral": 0.01,
+          "macro_f1": 0.6619
+        },
+        {
+          "umbral": 0.02,
+          "macro_f1": 0.5233
+        },
+        {
+          "umbral": 0.03,
+          "macro_f1": 0.5047
+        },
+        {
+          "umbral": 0.04,
+          "macro_f1": 0.4789
+        },
+        {
+          "umbral": 0.05,
+          "macro_f1": 0.4678
+        },
+        {
+          "umbral": 0.06,
+          "macro_f1": 0.4613
+        },
+        {
+          "umbral": 0.07,
+          "macro_f1": 0.449
+        },
+        {
+          "umbral": 0.08,
+          "macro_f1": 0.4335
+        },
+        {
+          "umbral": 0.09,
+          "macro_f1": 0.4223
+        },
+        {
+          "umbral": 0.1,
+          "macro_f1": 0.4139
+        },
+        {
+          "umbral": 0.11,
+          "macro_f1": 0.399
+        },
+        {
+          "umbral": 0.12,
+          "macro_f1": 0.3883
+        },
+        {
+          "umbral": 0.13,
+          "macro_f1": 0.3788
+        },
+        {
+          "umbral": 0.14,
+          "macro_f1": 0.3637
+        },
+        {
+          "umbral": 0.15,
+          "macro_f1": 0.3589
+        },
+        {
+          "umbral": 0.16,
+          "macro_f1": 0.3547
+        },
+        {
+          "umbral": 0.17,
+          "macro_f1": 0.3537
+        },
+        {
+          "umbral": 0.18,
+          "macro_f1": 0.339
+        },
+        {
+          "umbral": 0.19,
+          "macro_f1": 0.3326
+        },
+        {
+          "umbral": 0.2,
+          "macro_f1": 0.3305
+        },
+        {
+          "umbral": 0.21,
+          "macro_f1": 0.3262
+        },
+        {
+          "umbral": 0.22,
+          "macro_f1": 0.3251
+        },
+        {
+          "umbral": 0.23,
+          "macro_f1": 0.324
+        },
+        {
+          "umbral": 0.24,
+          "macro_f1": 0.3232
+        },
+        {
+          "umbral": 0.25,
+          "macro_f1": 0.3221
+        },
+        {
+          "umbral": 0.26,
+          "macro_f1": 0.3221
+        },
+        {
+          "umbral": 0.27,
+          "macro_f1": 0.3221
+        },
+        {
+          "umbral": 0.28,
+          "macro_f1": 0.3221
+        },
+        {
+          "umbral": 0.29,
+          "macro_f1": 0.3221
+        },
+        {
+          "umbral": 0.3,
+          "macro_f1": 0.321
+        },
+        {
+          "umbral": 0.31,
+          "macro_f1": 0.321
+        },
+        {
+          "umbral": 0.32,
+          "macro_f1": 0.321
+        },
+        {
+          "umbral": 0.33,
+          "macro_f1": 0.321
+        },
+        {
+          "umbral": 0.34,
+          "macro_f1": 0.321
+        },
+        {
+          "umbral": 0.35,
+          "macro_f1": 0.3177
+        },
+        {
+          "umbral": 0.36,
+          "macro_f1": 0.3155
+        },
+        {
+          "umbral": 0.37,
+          "macro_f1": 0.3144
+        },
+        {
+          "umbral": 0.38,
+          "macro_f1": 0.3133
+        },
+        {
+          "umbral": 0.39,
+          "macro_f1": 0.3133
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1": 0.3133
+        },
+        {
+          "umbral": 0.41,
+          "macro_f1": 0.3111
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1": 0.3111
+        },
+        {
+          "umbral": 0.43,
+          "macro_f1": 0.3111
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1": 0.3111
+        },
+        {
+          "umbral": 0.45,
+          "macro_f1": 0.31
+        },
+        {
+          "umbral": 0.46,
+          "macro_f1": 0.31
+        },
+        {
+          "umbral": 0.47,
+          "macro_f1": 0.31
+        },
+        {
+          "umbral": 0.48,
+          "macro_f1": 0.31
+        },
+        {
+          "umbral": 0.49,
+          "macro_f1": 0.31
+        },
+        {
+          "umbral": 0.5,
+          "macro_f1": 0.3089
+        },
+        {
+          "umbral": 0.51,
+          "macro_f1": 0.3078
+        },
+        {
+          "umbral": 0.52,
+          "macro_f1": 0.3078
+        },
+        {
+          "umbral": 0.53,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.54,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.55,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.56,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.57,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.58,
+          "macro_f1": 0.3067
+        },
+        {
+          "umbral": 0.59,
+          "macro_f1": 0.3056
+        },
+        {
+          "umbral": 0.6,
+          "macro_f1": 0.3056
+        },
+        {
+          "umbral": 0.61,
+          "macro_f1": 0.3044
+        },
+        {
+          "umbral": 0.62,
+          "macro_f1": 0.3033
+        },
+        {
+          "umbral": 0.63,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.64,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.65,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.66,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.67,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.68,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.69,
+          "macro_f1": 0.3022
+        },
+        {
+          "umbral": 0.7,
+          "macro_f1": 0.3022
+        }
+      ]
+    },
+    "u2r": {
+      "filas_familia": 52,
+      "mezcla": {
+        "ataques": 52,
+        "normales": 39
+      },
+      "umbral_optimo": 0.01,
+      "macro_f1_optimo": 0.9433,
+      "macro_f1_en_042": 0.381,
+      "curva": [
+        {
+          "umbral": 0.01,
+          "macro_f1": 0.9433
+        },
+        {
+          "umbral": 0.02,
+          "macro_f1": 0.9327
+        },
+        {
+          "umbral": 0.03,
+          "macro_f1": 0.9331
+        },
+        {
+          "umbral": 0.04,
+          "macro_f1": 0.9112
+        },
+        {
+          "umbral": 0.05,
+          "macro_f1": 0.9003
+        },
+        {
+          "umbral": 0.06,
+          "macro_f1": 0.8895
+        },
+        {
+          "umbral": 0.07,
+          "macro_f1": 0.9009
+        },
+        {
+          "umbral": 0.08,
+          "macro_f1": 0.9009
+        },
+        {
+          "umbral": 0.09,
+          "macro_f1": 0.89
+        },
+        {
+          "umbral": 0.1,
+          "macro_f1": 0.89
+        },
+        {
+          "umbral": 0.11,
+          "macro_f1": 0.8681
+        },
+        {
+          "umbral": 0.12,
+          "macro_f1": 0.8571
+        },
+        {
+          "umbral": 0.13,
+          "macro_f1": 0.8461
+        },
+        {
+          "umbral": 0.14,
+          "macro_f1": 0.8351
+        },
+        {
+          "umbral": 0.15,
+          "macro_f1": 0.824
+        },
+        {
+          "umbral": 0.16,
+          "macro_f1": 0.8128
+        },
+        {
+          "umbral": 0.17,
+          "macro_f1": 0.8016
+        },
+        {
+          "umbral": 0.18,
+          "macro_f1": 0.7789
+        },
+        {
+          "umbral": 0.19,
+          "macro_f1": 0.7674
+        },
+        {
+          "umbral": 0.2,
+          "macro_f1": 0.6961
+        },
+        {
+          "umbral": 0.21,
+          "macro_f1": 0.6837
+        },
+        {
+          "umbral": 0.22,
+          "macro_f1": 0.6837
+        },
+        {
+          "umbral": 0.23,
+          "macro_f1": 0.6584
+        },
+        {
+          "umbral": 0.24,
+          "macro_f1": 0.6584
+        },
+        {
+          "umbral": 0.25,
+          "macro_f1": 0.6323
+        },
+        {
+          "umbral": 0.26,
+          "macro_f1": 0.619
+        },
+        {
+          "umbral": 0.27,
+          "macro_f1": 0.5915
+        },
+        {
+          "umbral": 0.28,
+          "macro_f1": 0.5915
+        },
+        {
+          "umbral": 0.29,
+          "macro_f1": 0.5483
+        },
+        {
+          "umbral": 0.3,
+          "macro_f1": 0.5483
+        },
+        {
+          "umbral": 0.31,
+          "macro_f1": 0.518
+        },
+        {
+          "umbral": 0.32,
+          "macro_f1": 0.518
+        },
+        {
+          "umbral": 0.33,
+          "macro_f1": 0.4699
+        },
+        {
+          "umbral": 0.34,
+          "macro_f1": 0.453
+        },
+        {
+          "umbral": 0.35,
+          "macro_f1": 0.453
+        },
+        {
+          "umbral": 0.36,
+          "macro_f1": 0.4357
+        },
+        {
+          "umbral": 0.37,
+          "macro_f1": 0.418
+        },
+        {
+          "umbral": 0.38,
+          "macro_f1": 0.418
+        },
+        {
+          "umbral": 0.39,
+          "macro_f1": 0.418
+        },
+        {
+          "umbral": 0.4,
+          "macro_f1": 0.418
+        },
+        {
+          "umbral": 0.41,
+          "macro_f1": 0.3997
+        },
+        {
+          "umbral": 0.42,
+          "macro_f1": 0.381
+        },
+        {
+          "umbral": 0.43,
+          "macro_f1": 0.381
+        },
+        {
+          "umbral": 0.44,
+          "macro_f1": 0.3616
+        },
+        {
+          "umbral": 0.45,
+          "macro_f1": 0.3616
+        },
+        {
+          "umbral": 0.46,
+          "macro_f1": 0.3616
+        },
+        {
+          "umbral": 0.47,
+          "macro_f1": 0.3616
+        },
+        {
+          "umbral": 0.48,
+          "macro_f1": 0.3616
+        },
+        {
+          "umbral": 0.49,
+          "macro_f1": 0.3417
+        },
+        {
+          "umbral": 0.5,
+          "macro_f1": 0.3212
+        },
+        {
+          "umbral": 0.51,
+          "macro_f1": 0.3212
+        },
+        {
+          "umbral": 0.52,
+          "macro_f1": 0.3212
+        },
+        {
+          "umbral": 0.53,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.54,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.55,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.56,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.57,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.58,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.59,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.6,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.61,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.62,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.63,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.64,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.65,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.66,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.67,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.68,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.69,
+          "macro_f1": 0.3
+        },
+        {
+          "umbral": 0.7,
+          "macro_f1": 0.3
+        }
+      ]
+    }
+  },
+  "umbral_promedio_optimo": 0.01,
+  "macro_f1_promedio_optimo": 0.8867,
+  "promedio_curva": [
+    {
+      "umbral": 0.01,
+      "macro_f1": 0.8867
+    },
+    {
+      "umbral": 0.02,
+      "macro_f1": 0.8521
+    },
+    {
+      "umbral": 0.03,
+      "macro_f1": 0.8475
+    },
+    {
+      "umbral": 0.04,
+      "macro_f1": 0.8327
+    },
+    {
+      "umbral": 0.05,
+      "macro_f1": 0.8252
+    },
+    {
+      "umbral": 0.06,
+      "macro_f1": 0.8167
+    },
+    {
+      "umbral": 0.07,
+      "macro_f1": 0.8137
+    },
+    {
+      "umbral": 0.08,
+      "macro_f1": 0.8084
+    },
+    {
+      "umbral": 0.09,
+      "macro_f1": 0.8015
+    },
+    {
+      "umbral": 0.1,
+      "macro_f1": 0.7982
+    },
+    {
+      "umbral": 0.11,
+      "macro_f1": 0.7879
+    },
+    {
+      "umbral": 0.12,
+      "macro_f1": 0.7817
+    },
+    {
+      "umbral": 0.13,
+      "macro_f1": 0.7756
+    },
+    {
+      "umbral": 0.14,
+      "macro_f1": 0.7665
+    },
+    {
+      "umbral": 0.15,
+      "macro_f1": 0.7559
+    },
+    {
+      "umbral": 0.16,
+      "macro_f1": 0.7418
+    },
+    {
+      "umbral": 0.17,
+      "macro_f1": 0.7284
+    },
+    {
+      "umbral": 0.18,
+      "macro_f1": 0.7139
+    },
+    {
+      "umbral": 0.19,
+      "macro_f1": 0.7045
+    },
+    {
+      "umbral": 0.2,
+      "macro_f1": 0.6825
+    },
+    {
+      "umbral": 0.21,
+      "macro_f1": 0.6757
+    },
+    {
+      "umbral": 0.22,
+      "macro_f1": 0.674
+    },
+    {
+      "umbral": 0.23,
+      "macro_f1": 0.666
+    },
+    {
+      "umbral": 0.24,
+      "macro_f1": 0.664
+    },
+    {
+      "umbral": 0.25,
+      "macro_f1": 0.6557
+    },
+    {
+      "umbral": 0.26,
+      "macro_f1": 0.6508
+    },
+    {
+      "umbral": 0.27,
+      "macro_f1": 0.6413
+    },
+    {
+      "umbral": 0.28,
+      "macro_f1": 0.6401
+    },
+    {
+      "umbral": 0.29,
+      "macro_f1": 0.6224
+    },
+    {
+      "umbral": 0.3,
+      "macro_f1": 0.6202
+    },
+    {
+      "umbral": 0.31,
+      "macro_f1": 0.6116
+    },
+    {
+      "umbral": 0.32,
+      "macro_f1": 0.6101
+    },
+    {
+      "umbral": 0.33,
+      "macro_f1": 0.597
+    },
+    {
+      "umbral": 0.34,
+      "macro_f1": 0.5919
+    },
+    {
+      "umbral": 0.35,
+      "macro_f1": 0.5899
+    },
+    {
+      "umbral": 0.36,
+      "macro_f1": 0.5838
+    },
+    {
+      "umbral": 0.37,
+      "macro_f1": 0.5778
+    },
+    {
+      "umbral": 0.38,
+      "macro_f1": 0.5761
+    },
+    {
+      "umbral": 0.39,
+      "macro_f1": 0.5747
+    },
+    {
+      "umbral": 0.4,
+      "macro_f1": 0.5735
+    },
+    {
+      "umbral": 0.41,
+      "macro_f1": 0.5661
+    },
+    {
+      "umbral": 0.42,
+      "macro_f1": 0.5599
+    },
+    {
+      "umbral": 0.43,
+      "macro_f1": 0.5582
+    },
+    {
+      "umbral": 0.44,
+      "macro_f1": 0.5515
+    },
+    {
+      "umbral": 0.45,
+      "macro_f1": 0.5496
+    },
+    {
+      "umbral": 0.46,
+      "macro_f1": 0.5468
+    },
+    {
+      "umbral": 0.47,
+      "macro_f1": 0.5428
+    },
+    {
+      "umbral": 0.48,
+      "macro_f1": 0.537
+    },
+    {
+      "umbral": 0.49,
+      "macro_f1": 0.5268
+    },
+    {
+      "umbral": 0.5,
+      "macro_f1": 0.5141
+    },
+    {
+      "umbral": 0.51,
+      "macro_f1": 0.5056
+    },
+    {
+      "umbral": 0.52,
+      "macro_f1": 0.4919
+    },
+    {
+      "umbral": 0.53,
+      "macro_f1": 0.477
+    },
+    {
+      "umbral": 0.54,
+      "macro_f1": 0.4671
+    },
+    {
+      "umbral": 0.55,
+      "macro_f1": 0.4605
+    },
+    {
+      "umbral": 0.56,
+      "macro_f1": 0.4558
+    },
+    {
+      "umbral": 0.57,
+      "macro_f1": 0.4512
+    },
+    {
+      "umbral": 0.58,
+      "macro_f1": 0.4476
+    },
+    {
+      "umbral": 0.59,
+      "macro_f1": 0.4444
+    },
+    {
+      "umbral": 0.6,
+      "macro_f1": 0.4422
+    },
+    {
+      "umbral": 0.61,
+      "macro_f1": 0.4363
+    },
+    {
+      "umbral": 0.62,
+      "macro_f1": 0.4299
+    },
+    {
+      "umbral": 0.63,
+      "macro_f1": 0.424
+    },
+    {
+      "umbral": 0.64,
+      "macro_f1": 0.4128
+    },
+    {
+      "umbral": 0.65,
+      "macro_f1": 0.3932
+    },
+    {
+      "umbral": 0.66,
+      "macro_f1": 0.3764
+    },
+    {
+      "umbral": 0.67,
+      "macro_f1": 0.3609
+    },
+    {
+      "umbral": 0.68,
+      "macro_f1": 0.3546
+    },
+    {
+      "umbral": 0.69,
+      "macro_f1": 0.3492
+    },
+    {
+      "umbral": 0.7,
+      "macro_f1": 0.3416
+    }
+  ]
+}

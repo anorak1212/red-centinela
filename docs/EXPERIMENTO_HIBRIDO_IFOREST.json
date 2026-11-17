@@ -1,0 +1,70 @@
+{
+  "generado": "2026-11-17T00:38:57-0600",
+  "protocolo": "leave-one-family-out sobre KDDTrain+; umbral del RF por macro-F1 del holdout; corte de anomalia por presupuesto de falsos positivos sobre normales del holdout; KDDTest+ no se uso",
+  "resultados": {
+    "r2l": {
+      "umbral_rf": 0.37,
+      "recall_familia_no_vista_rf": 0.0121,
+      "falsos_positivos_holdout_normal_rf": 0.0009,
+      "macro_f1_holdout_rf": 0.9992,
+      "presupuestos": {
+        "1%": {
+          "corte_score": -0.5389,
+          "recall_familia_no_vista": 0.0683,
+          "falsos_positivos_holdout_normal": 0.0106,
+          "macro_f1_holdout": 0.994
+        },
+        "2%": {
+          "corte_score": -0.5198,
+          "recall_familia_no_vista": 0.0714,
+          "falsos_positivos_holdout_normal": 0.0204,
+          "macro_f1_holdout": 0.9887
+        },
+        "5%": {
+          "corte_score": -0.4911,
+          "recall_familia_no_vista": 0.0824,
+          "falsos_positivos_holdout_normal": 0.0505,
+          "macro_f1_holdout": 0.9725
+        },
+        "10%": {
+          "corte_score": -0.4615,
+          "recall_familia_no_vista": 0.1477,
+          "falsos_positivos_holdout_normal": 0.1003,
+          "macro_f1_holdout": 0.9457
+        }
+      }
+    },
+    "u2r": {
+      "umbral_rf": 0.34,
+      "recall_familia_no_vista_rf": 0.1538,
+      "falsos_positivos_holdout_normal_rf": 0.0012,
+      "macro_f1_holdout_rf": 0.9992,
+      "presupuestos": {
+        "1%": {
+          "corte_score": -0.5302,
+          "recall_familia_no_vista": 0.1731,
+          "falsos_positivos_holdout_normal": 0.0108,
+          "macro_f1_holdout": 0.994
+        },
+        "2%": {
+          "corte_score": -0.5149,
+          "recall_familia_no_vista": 0.1731,
+          "falsos_positivos_holdout_normal": 0.0208,
+          "macro_f1_holdout": 0.9887
+        },
+        "5%": {
+          "corte_score": -0.4918,
+          "recall_familia_no_vista": 0.1923,
+          "falsos_positivos_holdout_normal": 0.0507,
+          "macro_f1_holdout": 0.9727
+        },
+        "10%": {
+          "corte_score": -0.4667,
+          "recall_familia_no_vista": 0.3462,
+          "falsos_positivos_holdout_normal": 0.1006,
+          "macro_f1_holdout": 0.946
+        }
+      }
+    }
+  }
+}

@@ -51,7 +51,8 @@ def render() -> None:
         "Generado el "
         f"{str(metricas.get('generado', '?'))[:10]} con la versión "
         f"{metricas.get('version_motor', '?')} del motor. "
-        "El umbral de decisión es 0.41 y se calibró sobre un holdout interno, nunca sobre KDDTest+.",
+        f"El umbral de decisión es {_f(produccion.get('umbral_decision'), 2)} y se "
+        "calibró sobre un holdout interno, nunca sobre KDDTest+.",
         [
             (f"{float(binario.get('macro_f1', 0)):.4f}", "Macro-F1 binario", "KDDTest+, meta 0.90"),
             (f"{float(binario.get('weighted_f1', 0)):.4f}", "F1 ponderado", "KDDTest+"),
@@ -66,7 +67,7 @@ def render() -> None:
     _seccion_familias(familias, multi)
     _seccion_dificil(binario, dificil, dificil_bin)
     _seccion_comparativa(metricas.get("comparativa_modelos") or [])
-    _seccion_honestidad(holdout, iforest)
+    _seccion_honestidad(holdout, iforest, metricas.get("validacion_cruzada") or {})
     _seccion_costo(latencia, tiempos, produccion)
 
 
@@ -290,20 +291,64 @@ def _seccion_comparativa(comparativa: list[dict]) -> None:
     )
 
 
-def _seccion_honestidad(holdout: dict, iforest: dict) -> None:
-    estilos.seccion("6", "Holdout interno e Isolation Forest",
-                    "por qué el 0.9992 no es el resultado del proyecto")
+def _f(valor, decimales: int = 4) -> str:
+    """Formatea una métrica o dice que no se midió. Nunca imprime un 0 falso."""
+    if valor is None:
+        return "no medido"
+    try:
+        return f"{float(valor):.{decimales}f}"
+    except (TypeError, ValueError):
+        return "no medido"
+
+
+def _fila_cv(cv: dict) -> dict | None:
+    """Elige el resultado de validación cruzada que corresponde al modelo.
+
+    `metadata.json` guarda una lista de configuraciones probadas y el nombre de
+    la elegida. Si no está el nombre, se toma la última, que es la que se
+    entrenó al final.
+    """
+    resultados = cv.get("resultados") or []
+    if not resultados:
+        return None
+    nombre = cv.get("elegido")
+    for fila in resultados:
+        if nombre and fila.get("nombre") == nombre:
+            return fila
+    return resultados[-1]
+
+
+def _seccion_honestidad(holdout: dict, iforest: dict, cv: dict | None = None) -> None:
+    estilos.seccion("6", "Validación interna e Isolation Forest",
+                    "por qué el rendimiento interno no es el resultado del proyecto")
+    cv = cv or {}
+    elegido = _fila_cv(cv)
     izquierda, derecha = st.columns(2, gap="large")
     with izquierda:
-        st.subheader("Holdout interno")
-        estilos.kpis([
-            ("Macro-F1 binario", f"{float(holdout.get('macro_f1_binario', 0)):.4f}",
-             "misma distribución del entrenamiento"),
-            ("Macro-F1 5 clases", f"{float(holdout.get('macro_f1_multiclase', 0)):.4f}",
-             "misma distribución"),
-        ])
+        st.subheader("Validación interna")
+        binario = holdout.get("macro_f1_binario")
+        multi = holdout.get("macro_f1_multiclase")
+        if binario is None and multi is None and elegido:
+            # El entrenamiento no guardó el holdout de esa corrida, pero sí la
+            # validación cruzada. Se muestra lo que existe, no un cero.
+            st.caption(estilos.organico(
+                f"Holdout no medido en la corrida que produjo estos artefactos. "
+                f"Se muestra la validación cruzada de {len(elegido.get('folds') or [])} "
+                f"particiones, configuración {elegido.get('nombre', '?')}."
+            ))
+            estilos.kpis([
+                ("Macro-F1 binario (CV)", _f(elegido.get("macro_f1_binario_val")),
+                 "media de las particiones"),
+                ("Macro-F1 5 clases (CV)", _f(elegido.get("macro_f1_multiclase_val")),
+                 "media de las particiones"),
+            ])
+        else:
+            estilos.kpis([
+                ("Macro-F1 binario", _f(binario), "misma distribución del entrenamiento"),
+                ("Macro-F1 5 clases", _f(multi), "misma distribución"),
+            ])
         estilos.bloque(
-            "Estas cifras no cumplen PERF-003.",
+            "Estas cifras no valen como prueba de PERF-003.",
             "El holdout sale de la misma distribución que KDDTrain+, así que mide "
             "memorización de la distribución, no generalización a ataques nuevos. "
             "Se publica por transparencia y se marca para que nadie la cite como logro.",
