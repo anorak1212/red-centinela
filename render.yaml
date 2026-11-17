@@ -29,10 +29,10 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.10
       - key: REDCENTINELA_MODELOS_URL
-        sync: false
+        value: https://github.com/anorak1212/red-centinela/releases/download/modelos-v1.4.0/modelos_red_centinela.tar.gz
       # SHA-256 del paquete. Evita servir un modelo cambiado sin que nadie note.
       - key: REDCENTINELA_MODELOS_SHA256
-        sync: false
+        value: 93573b577a0b982f4c32fe5bf4f579bbc74ee6b271af290f265237e5ed6067a7
       # Cadena de Neon. Sin ella el historial cae en SQLite, que en Render se
       # borra en cada despliegue: el tablero mostraría el historial vacío.
       - key: DATABASE_URL
@@ -49,4 +49,8 @@ services:
       # el navegador: CORS no interviene. Se deja explícito por si alguien
       # consume la API desde un navegador.
       - key: REDCENTINELA_ORIGENES
+        value: https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app
+      # La vista Sistema compara DEPLOY-013 contra esta URL. Sin ella el
+      # criterio aparece como no verificable aunque el tablero esté publicado.
+      - key: REDCENTINELA_TABLERO_URL
         value: https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app
