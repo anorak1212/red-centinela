@@ -14,7 +14,7 @@ Comprueba, en este orden y sin inventar nada:
 Uso:
     python -m scripts.smoke_prod --api http://127.0.0.1:8000
     python -m scripts.smoke_prod --api https://red-centinela-api.onrender.com \
-        --tablero https://red-centinela.streamlit.app \
+        --tablero https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app \
         --muestra datasets/sample_trafico.csv --esperado-ataques 30
 
 Con una muestra sin columna `family` no se pueden medir familias: se compara el

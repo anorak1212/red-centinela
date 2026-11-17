@@ -93,7 +93,7 @@ del tablero. Ejemplo contra producción (escribe en historial y, si hay ataques,
 disparar alertas reales de Telegram según configuración):
 
 ```powershell
-python -m scripts.smoke_prod --api https://red-centinela-api.onrender.com --tablero https://red-centinela.streamlit.app --muestra datasets/sample_trafico.csv --esperado-ataques 30 --latencia 20
+python -m scripts.smoke_prod --api https://red-centinela-api.onrender.com --tablero https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app --muestra datasets/sample_trafico.csv --esperado-ataques 30 --latencia 20
 ```
 
 Las pruebas que dependen de modelos o dataset se omiten solas si no están presentes.

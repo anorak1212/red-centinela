@@ -11,7 +11,7 @@ import pytest
 from tablero import verificacion
 
 API = "https://red-centinela-api.onrender.com"
-TABLERO = "https://red-centinela.streamlit.app"
+TABLERO = "https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app"
 
 
 def _salud(**cambios) -> dict:
@@ -88,7 +88,7 @@ def _criterio(veredicto: dict, ident: str) -> dict:
     "url, esperado",
     [
         ("https://red-centinela-api.onrender.com", True),
-        ("https://red-centinela.streamlit.app", True),
+        ("https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app", True),
         ("http://127.0.0.1:8000", False),
         ("http://localhost:8000", False),
         ("http://[::1]:8000", False),

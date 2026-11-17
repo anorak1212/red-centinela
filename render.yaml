@@ -49,4 +49,4 @@ services:
       # el navegador: CORS no interviene. Se deja explícito por si alguien
       # consume la API desde un navegador.
       - key: REDCENTINELA_ORIGENES
-        value: https://red-centinela.streamlit.app
+        value: https://red-centinela-k9gkhpyvsakean9cuhfd4n.streamlit.app
